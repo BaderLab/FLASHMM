@@ -1,0 +1,201 @@
+#' Simulating scRNA-seq Data based on Negative Binomial Distribution
+#'
+#' @description
+#' simuRNAseq simulates scRNA-seq data with multiple subjects, multiple cell-types and two conditions based on a negative binomial (NB) distribution using a reference data as background or control.
+#' The reference data consisting of genes-by-cells counts matrix is used to estimate the NB dispersion and means for the genes to be simulated. The simulated genes are randomly selected from the reference data.
+#' The NB dispersion are estimated by the method-of-moments estimate (MME).
+#' The NB means for the background in the control are estimated by the sample mean. The NB means for the differentially expressed (DE) genes are given by the sample mean plus a log-fold change (logFC).
+#' The simulated cells are randomly selected from the meta data that specifies subjects, cell-types and treatments for the cells.
+#' The meta data consists of samples, clusters of cell types, and treatments, which can be generated either from reference data or randomly. If not provided, it will be randomly generated.
+#' A random seed is recommended to be specified by set.seed before simulating data.
+#'
+#' @param counts A genes-by-cells matrix of reference counts.
+#' @param nGenes Number of genes to be simulated.
+#' @param nCells Number of cells to be simulated.
+#' @param metadata The meta data consisting of 4 columns: sam (sample labels), cls (cluster lables of cell types), trt (treatments or conditions) and libsize (library size or total counts per cell), which is randomly generated if not provided.
+#' @param nsam Number of subjects (individuals).
+#' @param ncls Number of clusters (cell-types).
+#' @param ntrt Number of treatments (only one condition is treated).
+#' @param trt Treatment, specifying which condition is treated.
+#' @param nDEgenes Total number of DE genes.
+#' @param nDEgenesType Number of DE genes specific to a cell type, named by cell cluster labels.
+#' @param pDEgenesType Proportion of DE genes in a cell-type. Default NULL means equal proportion.
+#' @param adjust.library.size If TRUE, adjust library sizes using the reference counts.
+#' @param direction Specify if the DE genes are up- and/or down-regulated.
+#' @param minbeta Lower bound of the DE gene logFC.
+#' @param maxbeta Upper bound of the DE gene logFC. minbeta < maxbeta. If direction = "both", minbeta*maxbeta > 0. If direction = "up", minbeta > 0. If direction = "down", maxbeta < 0.
+#' @param var.randomeffects Variance of random effects
+#'
+#' @return mean.dispersion: A data frame of the means and dispersion,
+#' @return metadata: Meta data consisting of 4 columns: sam (sample labels), cls (cluster lables of cell types), trt (two treatments/conditions) and libsize (library sizes).
+#' @return counts: A genes-by-cells matrix of the simulated counts.
+#' @return DEgenes: A data frame of DE genes consisting of 3 columns: gene, beta (effect), and cluster to which the gene is specific.
+#' @return treatment: The condition treated.
+#'
+#' @export
+simuRNAseq <- function(counts, nGenes = nrow(counts), nCells = ncol(counts), metadata = NULL, nsam = 25, ncls = 10, ntrt = 2, trt = NULL, nDEgenes = ncls, nDEgenesType, pDEgenesType = NULL, adjust.library.size = TRUE, direction = c("both", "up", "down"), minbeta = 0.25, maxbeta = 1, var.randomeffects = 0.01)
+{
+direction <- match.arg(direction)
+stopifnot(minbeta < maxbeta)
+if (direction == "both") {
+	stopifnot(minbeta*maxbeta > 0)
+} else {
+	if (direction == "up") stopifnot(minbeta > 0)
+	else stopifnot(maxbeta < 0)
+}
+
+##MME dispersions
+mu <- rowMeans(counts)
+if (any(mu <= 0)){
+	index <- (mu > 0)
+	message(paste0("Message: removing ", sum(!index), " row(s) with zero mean."))
+	if (nGenes == nrow(counts)) nGenes <- sum(index)
+	counts <- counts[index, ]
+	mu <- mu[index]
+	}
+
+n <- ncol(counts)
+v <- rowSums(counts^2)/(n-1) - n*mu^2/(n-1)
+size <- mu^2/(v - mu)
+
+if (any(v <= mu)){
+	index <- (v > mu)
+	message(paste0("Message: removing ", sum(!index), " row(s) with var <= mu."))
+	if (nGenes == nrow(counts)) nGenes <- sum(index)
+	mu <- mu[index]
+	size <- size[index]
+	counts <- counts[index, ]
+	}
+
+##mean and dispersion for the genes in the reference data
+meandisp <- data.frame(mu = mu, dispersion = size)
+rownames(meandisp) <- rownames(counts)
+
+##mean and dispersion for the genes to be simulated
+if (nrow(meandisp) == nGenes){
+	musize <- meandisp
+} else musize <- meandisp[sample.int(nrow(meandisp), nGenes, replace = (nrow(meandisp) < nGenes)), ]
+
+mu <- musize$mu
+size <- musize$dispersion
+
+##subjects (samples)
+##clusters (cell-types)
+##treatments (conditions)
+if (is.null(metadata)){
+	metadata <- data.frame(
+	sam = as.factor(sample.int(nsam, nCells, replace = TRUE)),
+	cls = as.factor(sample.int(ncls, nCells, replace = TRUE)),
+	trt = LETTERS[sample.int(ntrt, nCells, replace = TRUE)])
+	if (adjust.library.size){
+		if (ncol(counts) != nCells){
+		metadata$libsize <- sample(colSums(counts), nCells, replace = (ncol(counts) < nCells))
+		} else metadata$libsize <- colSums(counts)
+	} else metadata$libsize <- 1
+	rownames(metadata) <- paste0("cell", 1:nCells)
+} else {
+	stopifnot(all(c("sam", "cls", "trt", "libsize") %in% colnames(metadata)))
+	if (!is.null(trt)) stopifnot(trt %in% metadata$trt)
+	if (nrow(metadata) != nCells)
+	metadata <- metadata[sample.int(nrow(metadata), nCells, replace = (nrow(metadata) < nCells)), ]
+	ntrt <- length(unique(metadata$trt))
+	}
+
+##Number of DE genes in each cell-type (cluster)
+clusters <- sort(unique(metadata$cls))
+if (missing(nDEgenesType)){
+	ncls <- length(clusters)
+	if (is.null(pDEgenesType)) pDEgenesType <- rep(1/ncls, ncls)
+	stopifnot(length(pDEgenesType) == ncls)
+	nDEgenesType <- c(rmultinom(1, nDEgenes, prob = pDEgenesType))
+	names(nDEgenesType) <- clusters
+} else {
+	stopifnot(length(nDEgenesType) == length(clusters))
+	if (is.null(names(nDEgenesType))){
+	message("Messages: 'nDEgenesType' is named by cell-types (clusters)")
+	names(nDEgenesType) <- clusters
+	}
+}
+nDEgenesType <- nDEgenesType[nDEgenesType > 0]
+clusters <- NULL
+
+##nDEgenes: numbers of DE genes
+##Ng0: number of non-DE genes
+##Ng: total genes
+if (sum(nDEgenesType) != nDEgenes){
+	nDEgenes <- sum(nDEgenesType)
+	message(paste0("Message: number of DE genes is changed as ", nDEgenes, "."))
+	}
+Ng <- nrow(musize)
+stopifnot(Ng >= nDEgenes)
+Ng0 <- Ng - nDEgenes
+
+##Counts
+counts <- matrix(NA, nrow = Ng, ncol = nCells)
+rownames(counts) <- rownames(musize)
+colnames(counts) <- rownames(metadata) #paste0("cell", 1:nCells)
+
+##(1) Constant effects (non-DE or no change): diff(betas) = 0 or
+##    betas = log(mu) = log(mu0) + centered-library-size
+##(2) Add random samples effects: log(mu_s) = Xs*beta + Zs*Bs = log(mu) + Zs*Bs
+##(3) Treatment (fixed) effects in one subpopulation (one cluster) with trt, e.g., "trt = B".
+
+NgList <- c("0"=Ng0, nDEgenesType)
+
+##DE genes
+DEgenes <- data.frame(gene = rownames(musize)[(Ng0+1):Ng],
+		beta = runif(nDEgenes, minbeta, maxbeta),
+		cluster = NA)
+if (direction == "both") DEgenes$beta <- (2*rbinom(nDEgenes, 1, prob = 0.5)-1)*DEgenes$beta
+
+#if (!one.direction) DEgenes$beta <- (2*rbinom(nDEgenes, 1, prob = 0.5)-1)*DEgenes$beta
+
+rownames(DEgenes) <- (Ng0+1):Ng
+for (i in 1:length(nDEgenesType)){
+	j <- (1+sum(NgList[1:i])):sum(NgList[1:(1+i)]) - Ng0
+	DEgenes$cluster[j] <- names(nDEgenesType)[i]
+	}
+
+##center log-library-size
+libsize <- log(metadata$libsize)
+libsize <- libsize - mean(libsize)
+##control and treatment (two conditions, i.e., ntrt = 2)
+##trt: the treatment considered as the last condition if not specified.
+if (is.null(trt)) {
+	trt <- sort(unique(metadata$trt))
+	trt <- trt[length(trt)]
+	}
+
+##two conditions (control and treatment)
+if (ntrt == 1) message("Message: only one condition, no treatment effects.")
+if (ntrt > 2) message("Warning: more than 2 conditions. Only one condition is considered as treatment.")
+message(paste0("Message: the condition ", trt, " is treated."))
+
+##counts generated by sampling
+for (sam in unique(metadata$sam)){
+	index <- (metadata$sam == sam)
+	Ns <- sum(index)
+	##contant effect + random effect (the effect of samples 'sam'),
+	##which is a constant for a gene and all samples (subjects) == sam.
+	##So variance within samples == sam is var.randomeffects.
+	##But between sam1 and sam2, the correlation = 0.
+	lfc <- log(mu) + rnorm(length(mu), sd = sqrt(var.randomeffects))
+	lfcsam <- lfc + matrix(libsize[index], nrow = Ng, ncol = Ns, byrow = TRUE)
+	counts[, index] <- matrix(rnbinom(Ng*Ns, size = size, mu = exp(lfcsam)), nrow = Ng, ncol = Ns)
+
+	##treatment effects
+	for (i in 1:length(nDEgenesType)){
+		indexB <- index & (metadata$trt == trt) & (metadata$cls == names(nDEgenesType)[i])
+		Nsi <- sum(indexB)
+		if (Nsi > 0){
+		Ngi <- nDEgenesType[i]
+		j <- (1+sum(NgList[1:i])):sum(NgList[1:(1+i)])
+		lfci <- lfc[j] + DEgenes$beta[j - Ng0]
+		lfci <- lfci + matrix(libsize[indexB], nrow = Ngi, ncol = Nsi, byrow = TRUE)
+		counts[j, indexB] <- matrix(rnbinom(Ngi*Nsi, size = size[j], mu = exp(lfci)), nrow = Ngi, ncol = Nsi)
+		}
+	}
+	}
+
+list(mean.dispersion = meandisp, metadata = metadata, counts = counts, DEgenes = DEgenes, treatment = trt)
+}

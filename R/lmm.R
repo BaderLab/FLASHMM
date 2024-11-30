@@ -1,0 +1,187 @@
+#' Fitting Linear Mixed-effects Models
+#'
+#' @description lmm is used to fit linear mixed-effects models (LMM) based on summary-level data. The LMM parameters are estimated by restricted maximum likelihood (REML) with Fisher scoring (FS) gradient descent algorithm.
+#'
+#' @param XX t(X)\%*\%X, X is a design matrix for fixed effects.
+#' @param XY t(Y\%*\%X), Y is a features-by-samples matrix of observed responses (genes-by-cells expression matrix for scRNA-seq).
+#' @param ZX t(Z)\%*\%X, Z = [Z1, ..., Zk],  a design matrix for k random factors (variables).
+#' @param ZY t(Y\%*\%Z).
+#' @param ZZ t(Z)\%*\%Z.
+#' @param Ynorm Norms for features (each row in Y), that is, Ynorm = rowSums(Y*Y).
+#' @param n Numbers of samples (cells in scRNA-seq), nrow(X).
+#' @param summary.stats A list of the summary statistics: XX, XY, ZX, ZY, ZZ, Ynorm and n, which can be computed by csslmm function.
+#' @param d A vector of (m1,...,mk), mi = ncol(Zi), number of columns in Zi. m1 + ... + mk = ncol(Z), number of columns in Z.
+#' @param theta0 A vector of initial values of the variance components, (s1, ...,sk, s_(k+1)), si = sigma_i^2, the variance component of the i-th type random effects. s_(k+1) = sigma^2, the variance component of model residual error.
+#' @param method The REML with Fisher scoring (FS) iterative algorithm, REML-FS.
+#' @param max.iter The maximal number of iterations for the iterative algorithm.
+#' @param epsilon Positive convergence tolerance. If the absolute value of the first partial derivative of log likelihood is less than epsilon, the iterations converge.
+#' @param output.cov If TRUE, output the covariance matrices for the estimated coefficients, which are needed for testing contrasts.
+#' @param output.RE If TRUE, output the best linear unbiased prediction (BLUP) of the random effects.
+#'
+#' @return A list containing the following components:
+#' @return dlogL First partial derivatives of log-likelihoods for each feature (gene).
+#' @return niter Nmbers of iterations for each feature (gene).
+#' @return coef A matrix of estimated coefficients (fixed effects), each column corresponds to a feature (gene) and each row one covariate.
+#' @return se A matrix of the standard errors of the estimated coefficients.
+#' @return t A matrix of t-values for the fixed effects, equal to coef/se.
+#' @return df Degrees of freedom.
+#' @return p A matrix of two-sided p-values for the fixed effects.
+#' @return cov A array of covariance matrices of the estimated coefficients (fixed effects).
+#' @return theta A matrix of the estimated variance components, each column corresponds to a feature (gene) and each row one variance component. The last row is the variance component of the residual error.
+#' @return se.theta Standard errors of the estimated theta.
+#' @return RE A matrix of the best linear unbiased prediction (BLUP) of random effects.
+#'
+#' @export
+lmm <- function(XX, XY, ZX, ZY, ZZ, Ynorm, n, summary.stats = NULL, d, theta0 = NULL, method = "REML-FS", max.iter = 50, epsilon = 1e-5, output.cov = TRUE, output.RE = FALSE)
+{
+if (!is.null(summary.stats)){
+stopifnot(all(c("XX", "XY", "ZX", "ZY", "ZZ", "Ynorm", "n") %in% names(summary.stats)))
+	XX <- summary.stats$XX
+	XY <- summary.stats$XY
+	ZX <- summary.stats$ZX
+	ZY <- summary.stats$ZY
+	ZZ <- summary.stats$ZZ
+	Ynorm <- summary.stats$Ynorm
+	n <- summary.stats$n
+}
+
+stopifnot(!any(is.na(XY)), !any(is.na(ZX)), !any(is.na(ZY)))
+p <- ncol(ZX)
+k <- length(d)
+
+stopifnot(sum(d) == ncol(ZZ))
+
+XXinv <- try(chol2inv(chol(XX)), silent = TRUE)
+if (inherits(XXinv, "try-error")) {
+	stop("XX is not positive-definite or X is not full column rank.")
+	}
+
+xxz <- XXinv%*%t(ZX)
+zrz <- ZZ - ZX%*%(XXinv%*%t(ZX))
+zry <- ZY - ZX%*%(XXinv%*%XY)
+yry <- Ynorm - colSums(XY*(XXinv%*%XY))
+
+niter <- NULL
+dlogL <- NULL
+theta <- matrix(nrow = k + 1, ncol = ncol(XY), dimnames = list(paste0("var", c(1:k, 0)), colnames(XY)))
+setheta <- theta
+RE <- matrix(nrow = nrow(ZY), ncol = ncol(XY), dimnames = dimnames(ZY))
+beta <- matrix(nrow = nrow(XY), ncol = ncol(XY), dimnames = dimnames(XY))
+sebeta <- beta
+covbeta <- array(dim = c(nrow(XY), nrow(XY), ncol(XY)),
+	dimnames = list(rownames(XY), rownames(XY), colnames(XY)))
+
+for (jy in 1:ncol(ZY)) {
+	if (is.null(theta0)) {
+		s <- c(rep(0, k), yry[jy]/(n-p))
+	} else s <- theta0
+
+vest <- varest(xxz, zrz, zryj = zry[, jy], yryj = yry[jy], n = n, d = d, s = s, max.iter = max.iter, epsilon = epsilon)
+s <- vest$s
+dl <- vest$dl
+iter <- vest$iter
+Minv <- vest$Minv
+
+if (max(abs(dl)) > epsilon) {
+	warningText <- paste0("The first derivatives of log likelihood for Y", jy)
+	dlText <- paste0(ifelse(abs(dl) > 1e-3, round(dl, 4), format(dl, digits = 3, scientific = TRUE)), collapse = ", ")
+	warning(paste0(warningText, ": ", dlText, ", doesn't reach epsilon ", epsilon))
+	}
+
+sr <- s[1:k]/s[k+1]
+M <- solve(sweep(ZZ, 1, STATS = rep(sr, times = d), FUN = "*") + diag(sum(d)))
+M <- sweep(M, 2, STATS = rep(sr, times = d), FUN = "*")
+xvx <- XXinv + xxz%*%(ginv(diag(sum(d)) - M%*%(ZX%*%xxz))%*%(M%*%t(xxz)))
+xvy <- XY[, jy] - t(ZX)%*%(M%*%ZY[, jy])
+b <- xvx%*%xvy
+covbeta[,,jy] <- (xvx + t(xvx))*(s[k+1]/2)
+
+RE[, jy] <- M%*%(ZY[, jy] - ZX%*%b)
+
+niter <- c(niter, iter)
+theta[, jy] <- s
+setheta[, jy] <- sqrt(diag(Minv))
+beta[, jy] <- b
+dlogL <- cbind(dlogL, dl)
+sebeta[, jy] <- sqrt(diag(as.matrix(covbeta[,,jy])))
+}
+tval <- beta/sebeta
+pval <- 2 * pt(-abs(tval), df = n-p)
+
+if (!output.cov) covbeta <- NULL
+if (!output.RE) RE <- NULL
+
+list(method = method, dlogL = dlogL, niter = niter, coef = beta, se = sebeta, t = tval, p = pval, cov = covbeta, df = n-p, theta = theta, se.theta = setheta, RE = RE)
+}
+
+
+#' A internal function to estimate variance components for one feature (gene).
+#'
+#' @description This function is used internally (inside lmm).
+#'
+#' @param xxz XXinv\%*\%t(ZX), where XXinv is the inverse of XX and ZX = t(Z)\%*\%X.
+#' @param zrz ZZ - ZX\%*\%(XXinv\%*\%t(ZX)), ZZ = t(Z)\%*\%Z.
+#' @param zryj zry[, j], where zry = ZY - ZX\%*\%(XXinv\%*\%XY)
+#' @param yryj yry[j], where yry = Ynorm - colSums(XY*(XXinv\%*\%XY))
+#' @param n Numbers of samples (cells in scRNA-seq).
+#' @param d A vector of (m1,...,mk), mi = ncol(Zi), number of columns in Zi.
+#' @param s A vector of initial values of the variance components, (s1, ...,sk, s_(k+1)).
+#' @param max.iter The maximal number of iterations.
+#' @param epsilon Positive convergence tolerance.
+#'
+#' @return A list consisting of
+#' estimates of variance components (s),
+#' first partial derivatives of log-likehood (dl),
+#' number of iterations (iter), and
+#' inverse of Fisher information matrix (Minv).
+#' @keywords internal
+varest <- function(xxz, zrz, zryj, yryj, n, d, s, max.iter = 50, epsilon = 1e-5)
+{
+  p <- nrow(xxz)
+  k <- length(d)
+
+  dl <- 100
+  iter <- 0
+  while ((max(abs(dl)) > epsilon)	& (iter < max.iter)){
+    iter <- iter + 1
+
+    fs <- matrix(NA, k+1, k+1)
+    dl <- rep(NA, k+1)
+
+    sr <- s[1:k]/s[k+1]
+    M <- solve(sweep(zrz, 1, STATS = rep(sr, times = d), FUN = "*") + diag(sum(d)))
+    ZRZ <- zrz%*%M
+    ZR2Z <- ZRZ%*%M
+    yRZ <- t(zryj)%*%M
+
+    mi <- 0
+    for (i in 1:k){
+      ik <- (mi+1):(mi+d[i])
+      dl[i] <- (sum((yRZ[ik])^2)/s[k+1]^2 - sum(diag(ZRZ[ik, ik, drop = FALSE]))/s[k+1])/2
+
+      mj <- 0
+      for (j in 1:i){
+        ji <- (mj+1):(mj+d[j])
+        fs[i, j] <- sum((ZRZ[ji, ik])^2)/s[k+1]^2/2
+        fs[j, i] <- fs[i, j]
+        mj <- mj + d[j]
+      }
+
+      j <- k+1
+      fs[i, j] <- sum(diag(ZR2Z[ik, ik, drop = FALSE]))/s[k+1]^2/2
+      fs[j, i] <- fs[i, j]
+      mi <- mi + d[i]
+    }
+
+    i <- k+1
+    fs[i, i] <- (n - p - sum(d) + sum(t(M)*M))/s[k+1]^2/2
+
+    yR2y <- yryj - sum(((t(M) + diag(sum(d)))%*%zryj)*(M%*%(rep(sr, times = d)*zryj)))
+    dl[i] <-  (yR2y/s[k+1]^2 - (n-p-sum(d)+sum(diag(M)))/s[k+1])/2
+
+    Minv <- ginv(fs)
+    s <- s + Minv%*%dl
+  }
+
+  list(s = c(s), dl = dl, iter = iter, Minv = Minv)
+}
