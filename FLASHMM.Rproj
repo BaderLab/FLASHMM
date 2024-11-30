@@ -17,5 +17,6 @@ StripTrailingWhitespace: Yes
 
 BuildType: Package
 PackageUseDevtools: Yes
+PackagePath: /Users/changjiangxu/Bader Lab Dropbox/Changjiang Xu/Changjiang Xu's files/Documents/ut/Bader/MM/FLASHMM
 PackageInstallArgs: --no-multiarch --with-keep.source
 PackageRoxygenize: rd,collate,namespace,vignette
