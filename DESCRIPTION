@@ -1,0 +1,16 @@
+Package: FLASHMM
+Title: Fast and Scalable Single Cell Differential Expression Analysis using Mixed-effects Models
+Version: 0.1.0
+Authors@R: c(
+  person("Changjiang", "Xu", email = "changjiang.xu@utoronto.ca", role = c("aut", "cre")),
+  person("Gary", "Bader", email = "gary.bader@utoronto.ca", role = "aut"))
+Description: More about what it does (maybe more than one line)
+    Use four spaces when indenting paragraphs within the Description.
+License: GPL-3 
+Encoding: UTF-8
+LazyData: true
+RoxygenNote: 7.3.2
+Imports: 
+    stats,
+    MASS,
+    Matrix
