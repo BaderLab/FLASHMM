@@ -2,7 +2,7 @@
 % Please edit documentation in R/simuRNAseq.R
 \name{simuRNAseq}
 \alias{simuRNAseq}
-\title{Simulating scRNA-seq Data based on Negative Binomial Distribution}
+\title{Simulating Multi-sample Multi-cell-type scRNA-seq Dataset based on Negative Binomial Distribution}
 \usage{
 simuRNAseq(
   counts,
@@ -21,7 +21,7 @@ simuRNAseq(
   direction = c("both", "up", "down"),
   minbeta = 0.25,
   maxbeta = 1,
-  var.randomeffects = 0.01
+  var.randomeffects = 0.1
 )
 }
 \arguments{
@@ -60,7 +60,7 @@ simuRNAseq(
 \item{var.randomeffects}{Variance of random effects}
 }
 \value{
-mean.dispersion: A data frame of the means and dispersion,
+ref.mean.dispersion: A data frame of the reference counts' means and dispersion,
 
 metadata: Meta data consisting of 4 columns: sam (sample labels), cls (cluster lables of cell types), trt (two treatments/conditions) and libsize (library sizes).
 
@@ -71,7 +71,7 @@ DEgenes: A data frame of DE genes consisting of 3 columns: gene, beta (effect), 
 treatment: The condition treated.
 }
 \description{
-simuRNAseq simulates scRNA-seq data with multiple subjects, multiple cell-types and two conditions based on a negative binomial (NB) distribution using a reference data as background or control.
+simuRNAseq simulates scRNA-seq data with multiple subjects (samples), multiple clusters (cell-types) and two treatments (conditions) based on a negative binomial (NB) distribution using a reference data as background or control.
 The reference data consisting of genes-by-cells counts matrix is used to estimate the NB dispersion and means for the genes to be simulated. The simulated genes are randomly selected from the reference data.
 The NB dispersion are estimated by the method-of-moments estimate (MME).
 The NB means for the background in the control are estimated by the sample mean. The NB means for the differentially expressed (DE) genes are given by the sample mean plus a log-fold change (logFC).
@@ -80,7 +80,7 @@ The meta data consists of samples, clusters of cell types, and treatments, which
 A random seed is recommended to be specified by set.seed before simulating data.
 }
 \examples{
-#Simulate multiple-samples (subjects) multiple-clusters (cell-types) scRNA-seq data.
+#Simulate a multi-sample multi-cell-type scRNA-seq dataset.
 set.seed(2412)
 dat <- simuRNAseq(nGenes = 50, nCells = 1000, nsam = 25, ncls = 4, ntrt = 2, nDEgenes = 6)
 str(dat)

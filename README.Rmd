@@ -1,0 +1,129 @@
+---
+output: github_document
+---
+
+<!-- README.md is generated from README.Rmd. Please edit that file -->
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  fig.path = "man/figures/README-",
+  out.width = "100%"
+)
+```
+
+# FLASHMM
+
+<!-- badges: start -->
+<!-- badges: end -->
+
+FLASHMM is a package for analysis of single-cell differential expression (DE) using a linear mixed- effects model (LMM). The mixed-effects model has become a powerful tool in single-cell studies due to their ability to model intra-subject correlation and inter-subject variability.
+
+FLASHMM package provides two functions, lmm and lmmfit, for fitting LMM. The lmm function uses summary-level statistics as arguments. The lmmfit function is a wrapper function of lmm, which directly uses cell-level data and computes the summary statistics inside the function. The lmmfit function is simple to be operated but it has a limitation of memory use. For large scale data, it is recommended to precompute the summary statistics and then use lmm function to fit LMM.
+
+In summary, FLASHMM package provides the following functions.
+
+* lmm: fit LMM using summary-level data.
+* lmmfit: fit LMM using cell-level data.
+* lmmtest: perform statistical tests on fixed effects and the contrasts of the fixed effects.
+* sslmm: compute the summary-level data using cell-level data.
+* simuRNAseq: simulate multi-sample multi-cell-type scRNA-seq dataset based on a negative binomial distribution.
+
+## Installation
+
+You can install the development version of FLASHMM from Github: 
+
+devtools::install_github('https://github.com/Baderlab/FLASHMM')
+
+## Example
+
+This is a basic example which shows you how to use FLASHMM to perform single-cell differential expression analysis.
+
+```{r}
+library(FLASHMM)
+```
+
+### Simulating a scRNA-seq dataset by simuRNAseq
+
+Simulate a multi-sample multi-cell-cluster scRNA-seq dataset that contains 25 samples and 4 clusters (cell-types) with 2 treatments.
+
+```{r dataset}
+set.seed(2412)
+dat <- simuRNAseq(nGenes = 50, nCells = 1000, 
+                  nsam = 25, ncls = 4, ntrt = 2, nDEgenes = 6)
+
+str(dat)
+##
+
+#counts and meta data
+counts <- dat$counts
+metadata <- dat$metadata
+rm(dat)
+```
+
+### DE analysis using LMM
+
+**Model design**
+
+* Y: gene expression profile (log-transformed counts)
+* X: design matrix for fixed effects
+* Z: design matrix for random effects
+
+```{r}
+Y <- log(counts + 1) 
+X <- model.matrix(~ 0 + log(libsize) + cls + cls:trt, data = metadata)
+Z <- model.matrix(~ 0 + sam, data = metadata)
+d <- ncol(Z)
+```
+
+**LMM fitting**
+
+a) Fit LMM by lmmfit using cell-level data.
+
+```{r}
+fit <- lmmfit(Y, X, Z, d = d)
+```
+
+b) Fit LMM by lmm using summary-level data computed as follows.
+
+```{r}
+#Computing summary statistics
+n <- nrow(X)
+XX <- t(X)%*%X; XY <- t(Y%*%X)
+ZX <- t(Z)%*%X; ZY <- t(Y%*%Z); ZZ <- t(Z)%*%Z
+Ynorm <- rowSums(Y*Y)
+
+#Fitting LMM
+fitss <- lmm(XX, XY, ZX, ZY, ZZ, Ynorm = Ynorm, n = n, d = d)
+
+identical(fit, fitss)
+```
+
+c) Fit LMM by lmm using summary-level data computed by sslmm.
+
+```{r}
+#Computing summary statistics
+ss <- sslmm(X, Y, Z)
+
+#Fitting LMM
+fitss <- lmm(summary.stats = ss, d = d)
+
+identical(fit, fitss)
+```
+
+**Hypothesis tests**
+
+```{r}
+test <- lmmtest(fit)
+#head(test)
+
+#t-values
+all(t(fit$t) == test[, grep("_t", colnames(test))])
+fit$t[, 1:5]
+##
+
+#p-values
+all(t(fit$p) == test[, grep("_p", colnames(test))])
+fit$p[, 1:5]
+```
