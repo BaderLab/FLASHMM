@@ -6,7 +6,7 @@ Authors@R: c(
   person("Gary", "Bader", email = "gary.bader@utoronto.ca", role = "aut"))
 Description: A fast and scalable linear mixed-effects model (LMM) estimation algorithm 
     for analysis of single-cell differential expression. The algorithm uses 
-    summary-level statistcs and requires less computer memory to fit the LMM. 
+    summary-level statistics and requires less computer memory to fit the LMM. 
 License: GPL (>= 3)
 Encoding: UTF-8
 LazyData: true
