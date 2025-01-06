@@ -14,3 +14,8 @@ Imports:
     stats,
     MASS,
     Matrix
+Suggests: 
+    knitr,
+    bookdown,
+    rmarkdown
+VignetteBuilder: knitr
