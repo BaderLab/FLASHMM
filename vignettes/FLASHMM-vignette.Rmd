@@ -257,8 +257,9 @@ head(coldata)
 
 ##Generate the dataset by simuRNAseq function.
 set.seed(2412)
-dat <- simuRNAseq(counts, nGenes = 6000, nCells = 120000, metadata = coldata, 
-                  nDEgenes = 280, minbeta = 0.5, maxbeta = 1, var.randomeffects = 0.1)
+dat <- simuRNAseq(counts, nGenes = 500, nCells = 120000, metadata = coldata, 
+                  nsam = 25, ncls = 10, ntrt = 2, nDEgenes = 20, 
+                  minbeta = 0.5, maxbeta = 1, var.randomeffects = 0.1)
 str(dat)
 
 ##Remove the reference dataset that is no longer needed in the following analysis.
@@ -296,17 +297,8 @@ LMM fitting returns a list of estimates of LMM parameters (coefficients and vari
 
 ```{r Expression matrix, echo = TRUE, message = FALSE}
 ##Gene expression matrix, Y = log2(1 + counts)
-##We compute the log-transformed count matrix by sub-block matrices to reduce data size.
-Y <- dat$counts
+Y <- log2(1 + dat$counts)
 dat$counts <- NULL #Remove the counts.
-
-ngrp <- 3 #number of sub-blocks
-sizegrp <- round(nrow(Y)/ngrp)
-sizegrp <- sizegrp + (ngrp*sizegrp < nrow(Y))
-for (i in 1:ngrp){
-  j <- (1+(i-1)*sizegrp):(min(nrow(Y), i*sizegrp))
-  Y[j, ] <- log2(1 + Y[j, ])
-}
 
 ##Design matrix for fixed effects
 X <- model.matrix(~ 0 + log(libsize) + cls + cls:trt, data = dat$meta)
@@ -387,15 +379,14 @@ p <- t(fit$p[index, cvg])
 padj <- matrix(p.adjust(c(p), method = "fdr"), nrow = nrow(p), ncol = ncol(p))
 
 ##DE genes specific to a cell cluster with FDR < 0.05.
-DEg <- NULL
+degenes <- NULL
 for (j in 1:ncol(p)){
   i <- (padj[, j] < 0.05)
-  DEg <- rbind(DEg, data.frame(gene = rownames(p)[i], cluster = j, coef = beta[i, j], p = p[i, j]))
+  degenes <- rbind(degenes, data.frame(gene = rownames(p)[i], cluster = j, coef = beta[i, j], p = p[i, j]))
 }
-rownames(DEg) <- NULL
-dim(DEg)
-head(DEg)
-tail(DEg)
+rownames(degenes) <- NULL
+dim(degenes)
+degenes[1:10, ]
 
 sessionInfo()
 
