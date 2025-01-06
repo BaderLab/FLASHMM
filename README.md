@@ -33,7 +33,10 @@ In summary, FLASHMM package provides the following functions.
 
 You can install the development version of FLASHMM from Github:
 
-devtools::install_github(‘<https://github.com/Baderlab/FLASHMM>’)
+``` r
+library(devtools)
+devtools::install_github("https://github.com/Baderlab/FLASHMM")
+```
 
 ## Example
 
