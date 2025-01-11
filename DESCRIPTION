@@ -7,7 +7,7 @@ Authors@R: c(
 Description: A fast and scalable linear mixed-effects model (LMM) estimation algorithm 
     for analysis of single-cell differential expression. The algorithm uses 
     summary-level statistics and requires less computer memory to fit the LMM. 
-License: GPL (>= 3)
+License: MIT + file LICENSE
 Encoding: UTF-8
 LazyData: true
 RoxygenNote: 7.3.2
