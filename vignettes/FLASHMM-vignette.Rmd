@@ -119,7 +119,6 @@ In summary, FLASHMM package provides the following functions.
 
 ```{r echo = TRUE, results = "hide", message = FALSE}
 #Install FLASHMM from Github.
-library(devtools)
 devtools::install_github("https://github.com/Baderlab/FLASHMM")
 
 #Load the package.

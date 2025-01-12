@@ -18,6 +18,8 @@ Imports:
 Suggests: 
     knitr,
     bookdown,
-    rmarkdown
+    rmarkdown,
+    devtools,
+    ExperimentHub
 VignetteBuilder: knitr
 URL: https://github.com/BaderLab/FLASHMM
