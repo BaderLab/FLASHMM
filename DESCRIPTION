@@ -1,5 +1,5 @@
 Package: FLASHMM
-Title: Fast and Scalable Single Cell Differential Expression Analysis using Mixed-effects Models
+Title: Fast and Scalable Single Cell Differential Expression Analysis Using Mixed-effects Models
 Version: 0.1.0
 Authors@R: c(
   person("Changjiang", "Xu", email = "changjiang.xu@utoronto.ca", role = c("aut", "cre")),
