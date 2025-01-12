@@ -23,3 +23,4 @@ Suggests:
     ExperimentHub
 VignetteBuilder: knitr
 URL: https://github.com/BaderLab/FLASHMM
+BugReports: https://github.com/BaderLab/FLASHMM/issues
