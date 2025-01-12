@@ -256,8 +256,8 @@ head(coldata)
 
 ##Generate the dataset by simuRNAseq function.
 set.seed(2412)
-dat <- simuRNAseq(counts, nGenes = 500, nCells = 120000, metadata = coldata, 
-                  nsam = 25, ncls = 10, ntrt = 2, nDEgenes = 20, 
+dat <- simuRNAseq(counts, nGenes = 100, nCells = 120000, metadata = coldata, 
+                  nsam = 25, ncls = 10, ntrt = 2, nDEgenes = 10, 
                   minbeta = 0.5, maxbeta = 1, var.randomeffects = 0.1)
 str(dat)
 
@@ -377,15 +377,17 @@ p <- t(fit$p[index, cvg])
 ##Adjust p-values by FDR.
 padj <- matrix(p.adjust(c(p), method = "fdr"), nrow = nrow(p), ncol = ncol(p))
 
-##DE genes specific to a cell cluster with FDR < 0.05.
+##The DE genes specific to a cell cluster with FDR < 0.05.
 degenes <- NULL
 for (j in 1:ncol(p)){
   i <- (padj[, j] < 0.05)
-  degenes <- rbind(degenes, data.frame(gene = rownames(p)[i], cluster = j, coef = beta[i, j], p = p[i, j]))
+  if (sum(i) > 0) degenes <- rbind(degenes, data.frame(gene = rownames(p)[i], cluster = j, coef = beta[i, j], p = p[i, j], FDR = padj[i, j]))
 }
 rownames(degenes) <- NULL
-dim(degenes)
-degenes[1:10, ]
+degenes
+
+##The simulated DE genes
+dat$DEgenes
 
 sessionInfo()
 
