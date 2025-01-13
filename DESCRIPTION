@@ -2,8 +2,8 @@ Package: FLASHMM
 Title: Fast and Scalable Single Cell Differential Expression Analysis using Mixed-Effects Models
 Version: 1.0.0
 Authors@R: c(
-  person(given = "Changjiang", family = "Xu", email = "changjiang.xu@utoronto.ca", role = c("aut", "cre")),
-  person(given = "Gary", family = "Bader", email = "gary.bader@utoronto.ca", role = "aut"))
+  person("Changjiang", "Xu", email = "changjiang.xu@utoronto.ca", role = c("aut", "cre")),
+  person("Gary", "Bader", role = "aut"))
 Description: A fast and scalable linear mixed-effects model (LMM) estimation algorithm 
     for analysis of single-cell differential expression. The algorithm uses 
     summary-level statistics and requires less computer memory to fit the LMM. 
