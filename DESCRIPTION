@@ -20,6 +20,7 @@ Suggests:
     bookdown,
     rmarkdown,
     devtools,
+    SingleCellExperiment,
     ExperimentHub
 VignetteBuilder: knitr
 URL: https://github.com/BaderLab/FLASHMM
