@@ -212,11 +212,13 @@ Note that the simuRNAseq function can also generate the scRNA-seq dataset withou
 
 To load the PBMC dataset, we need ExperimentHub package.
 
-```{r, include = FALSE, echo = TRUE, message = FALSE}
+```{r, include = TRUE, echo = TRUE, message = FALSE}
 if (!requireNamespace("BiocManager", quietly = TRUE))
     install.packages("BiocManager")
-BiocManager::install("ExperimentHub")
-BiocManager::install("SingleCellExperiment")
+if (!requireNamespace("ExperimentHub", quietly = TRUE))
+    BiocManager::install("ExperimentHub")
+if (!requireNamespace("SingleCellExperiment", quietly = TRUE))
+    BiocManager::install("SingleCellExperiment")
 ```
 
 ```{r Reference dataset, echo = TRUE, message = FALSE}
