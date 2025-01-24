@@ -10,6 +10,7 @@ lmmfit(
   Z,
   d,
   theta0 = NULL,
+  nBlocks = 1,
   method = "REML-FS",
   max.iter = 50,
   epsilon = 1e-05,
@@ -27,6 +28,8 @@ lmmfit(
 \item{d}{A vector of (m1,...,mk), mi = ncol(Zi), number of columns in Zi. m1 + ... + mk = ncol(Z), number of columns in Z.}
 
 \item{theta0}{A vector of initial values of the variance components, (s1, ...,sk, s_(k+1)), si = sigma_i^2, the variance component of the i-th type random effects. s_(k+1) = sigma^2, the variance component of model residual error.}
+
+\item{nBlocks}{Number of blocks, used for blocking a big data to reduce the storage required in computing.}
 
 \item{method}{The REML with Fisher scoring (FS) iterative algorithm, REML-FS.}
 

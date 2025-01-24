@@ -7,6 +7,7 @@
 #' @param Z A design matrix for random effects, with rows corresponding to the columns of Y. Z = [Z1, ..., Zk], and Zi, i=1,...,k, is the design matrix for the i-th type random factor.
 #' @param d A vector of (m1,...,mk), mi = ncol(Zi), number of columns in Zi. m1 + ... + mk = ncol(Z), number of columns in Z.
 #' @param theta0 A vector of initial values of the variance components, (s1, ...,sk, s_(k+1)), si = sigma_i^2, the variance component of the i-th type random effects. s_(k+1) = sigma^2, the variance component of model residual error.
+#' @param nBlocks Number of blocks, used for blocking a big data to reduce the storage required in computing.
 #' @param method The REML with Fisher scoring (FS) iterative algorithm, REML-FS.
 #' @param max.iter The maximal number of iterations for the iterative algorithm.
 #' @param epsilon Positive convergence tolerance. If the absolute value of the first partial derivative of log likelihood is less than epsilon, the iterations converge.
@@ -59,18 +60,29 @@
 #' lmmtest(fit, contrast = cbind("B-A" = c(-1, 1)))
 #'
 #' @export
-lmmfit <- function(Y, X, Z, d, theta0 = NULL, method = "REML-FS", max.iter = 50, epsilon = 1e-5, output.cov = TRUE, output.RE = FALSE)
+lmmfit <- function(Y, X, Z, d, theta0 = NULL, nBlocks = 1, method = "REML-FS", max.iter = 50, epsilon = 1e-5, output.cov = TRUE, output.RE = FALSE)
 {
 stopifnot(!any(is.na(Y)), !any(is.na(X)), !any(is.na(Z)))
 stopifnot(ncol(Y) == nrow(X), ncol(Y) == nrow(Z))
 
+nr <- nrow(Y)
+size <- round(nr/nBlocks)
+if (nBlocks*size < nr) size <- round(nr/nBlocks) + 1
+
+XY <- NULL
+ZY <- NULL
+Ynorm <- NULL
+for (i in 1:nBlocks){
+  j <- (1+(i-1)*size):(min(nr, i*size))
+  XY <- cbind(XY, t(Y[j, ]%*%X))
+  ZY <- cbind(ZY, t(Y[j, ]%*%Z))
+  Ynorm <- c(Ynorm, rowSums(Y[j, ]*Y[j, ]))
+}
+
 n <- nrow(X)
 XX <- t(X)%*%X
-XY <- t(Y%*%X)
 ZX <- t(Z)%*%X
-ZY <- t(Y%*%Z)
 ZZ <- t(Z)%*%Z
-Ynorm <- rowSums(Y*Y)
 
 lmm(XX, XY, ZX, ZY, ZZ, Ynorm = Ynorm, n = n, d = d, theta0 = theta0, method = method, max.iter = max.iter, epsilon = epsilon, output.cov = output.cov, output.RE = output.RE)
 }
