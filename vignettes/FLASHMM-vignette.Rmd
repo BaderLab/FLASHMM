@@ -118,10 +118,12 @@ In summary, FLASHMM package provides the following functions.
 ## Quick start
 
 ```{r echo = TRUE, results = "hide", message = FALSE}
-#Install FLASHMM from Github.
+##Install FLASHMM from CRAN.
+# install.packages("FLASHMM")
+##Install FLASHMM from Github.
 devtools::install_github("https://github.com/Baderlab/FLASHMM")
 
-#Load the package.
+##Load the package.
 library(FLASHMM)
 ```
 
@@ -310,6 +312,7 @@ dat$counts <- NULL #Remove the counts.
 
 ##Design matrix for fixed effects
 X <- model.matrix(~ 0 + log(libsize) + cls + cls:trt, data = dat$meta)
+colnames(X) <- gsub("cls", "", colnames(X))
 colnames(X) <- gsub("\\+", "p", colnames(X))
 colnames(X) <- gsub(" ", "_", colnames(X))
 
@@ -378,22 +381,25 @@ sum(p <= 0.05)
 ##
 
 ##(3) The DE genes specific to a cell-type
-##Coefficients and p-values for the genes specific to a cell-type.
+##Coefficients, t-values, and p-values for the genes specific to a cell-type.
 index <- grep(":", rownames(fit$coef))
-beta <- t(fit$coef[index, cvg])
-p <- t(fit$p[index, cvg])
+ce <- fit$coef[index, cvg]
+tv <- fit$t[index, cvg]
+pv <- fit$p[index, cvg]
+
+out <- data.frame(
+	gene = rep(colnames(ce), nrow(ce)), 
+	cluster = rep(rownames(ce), each = ncol(ce)),
+	coef = c(t(ce)), t = c(t(tv)), p = c(t(pv)))
 
 ##Adjust p-values by FDR.
-padj <- matrix(p.adjust(c(p), method = "fdr"), nrow = nrow(p), ncol = ncol(p))
+out$FDR <- p.adjust(out$p, method = "fdr")
 
-##The DE genes specific to a cell cluster with FDR < 0.05.
-degenes <- NULL
-for (j in 1:ncol(p)){
-  i <- (padj[, j] < 0.05)
-  if (sum(i) > 0) degenes <- rbind(degenes, data.frame(gene = rownames(p)[i], cluster = j, coef = beta[i, j], p = p[i, j], FDR = padj[i, j]))
-}
-rownames(degenes) <- NULL
-degenes
+##The top DE genes
+##The DE genes with FDR < 0.05
+out <- out[order(out$p), ]
+rownames(out) <- NULL
+out[out$FDR <= 0.05, ]
 
 ##The simulated DE genes
 dat$DEgenes
