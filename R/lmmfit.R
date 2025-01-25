@@ -66,6 +66,7 @@ stopifnot(!any(is.na(Y)), !any(is.na(X)), !any(is.na(Z)))
 stopifnot(ncol(Y) == nrow(X), ncol(Y) == nrow(Z))
 
 nr <- nrow(Y)
+if (nBlocks > nr/2) stop("nBlocks > nrow(Y)/2")
 size <- round(nr/nBlocks)
 if (nBlocks*size < nr) size <- round(nr/nBlocks) + 1
 
