@@ -60,7 +60,7 @@
 #' lmmtest(fit, contrast = cbind("B-A" = c(-1, 1)))
 #'
 #' @export
-lmmfit <- function(Y, X, Z, d, theta0 = NULL, nBlocks = 1, method = "REML-FS", max.iter = 50, epsilon = 1e-5, output.cov = TRUE, output.RE = FALSE)
+lmmfit <- function(Y, X, Z, d, theta0 = NULL, nBlocks = ceiling(nrow(Y)*ncol(Y)*1e-8), method = "REML-FS", max.iter = 50, epsilon = 1e-5, output.cov = TRUE, output.RE = FALSE)
 {
 stopifnot(!any(is.na(Y)), !any(is.na(X)), !any(is.na(Z)))
 stopifnot(ncol(Y) == nrow(X), ncol(Y) == nrow(Z))
