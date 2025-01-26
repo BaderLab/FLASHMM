@@ -10,7 +10,7 @@ lmmfit(
   Z,
   d,
   theta0 = NULL,
-  nBlocks = 1,
+  nBlocks = ceiling(nrow(Y) * ncol(Y) * 1e-08),
   method = "REML-FS",
   max.iter = 50,
   epsilon = 1e-05,
