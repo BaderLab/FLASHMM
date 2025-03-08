@@ -14,7 +14,7 @@ lmmtest(
 \arguments{
 \item{fit}{A result of lmmfit/lmm, which contains
 coef (estimates of fixed effects), a matrix with rows representing the fixed effects and columns the different response variables in the model,
-cov (covariance matrix of the fixed effects), an array of three dimmesions for different response variables in the model,
+cov (covariance matrix of the fixed effects), an array of three dimensions for different response variables in the model,
 df (residual degree of freedom in the linear model).}
 
 \item{index}{A vector of integers or characters indicating which fixed effects are to be tested. By default index consists of all of the fixed effects. Ignored if contrast is not NULL.}
@@ -24,7 +24,7 @@ df (residual degree of freedom in the linear model).}
 \item{alternative}{A character string specifying the alternative hypothesis, one of "two.sided", "greater" or "less".}
 }
 \value{
-A matrix of t-values and p-values, in which the rows correspond to the features (genes) and the columns the fixed effects (covariates). .
+A matrix of coefficients, t-values and p-values, in which the rows correspond to the features (genes) and the columns the fixed effects (covariates). .
 }
 \description{
 lmmtest is used to test fixed effects or contrasts of fixed effects.

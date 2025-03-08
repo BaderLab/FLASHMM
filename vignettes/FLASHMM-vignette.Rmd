@@ -26,7 +26,7 @@ knitr::opts_chunk$set(
 
 # Method
 
-## LMM estimation and inference
+## LMM parameter estimation and hypothesis testing
 
 Consider the linear mixed-effects model (LMM) as expressed below [@Searle2006]
 \begin{equation}
@@ -54,12 +54,12 @@ $$var(\hat\beta) = (X^TV_{\theta}^{-1}X)^{-1},$$
 where $\theta = (\theta_0, \theta_1,\ldots, \theta_K)$, $\theta_0 = \sigma^2$, $\theta_k = \sigma^2_k$, and
 $$V_{\theta} = \theta_0 I_n + \theta_1 Z_1Z_1^T + \ldots + \theta_K Z_KZ_K^T.$$
 
-Estimating the variance components by either MLE or REML is a difficult numerical problem. Various iterative methods based on the log likelihood, called gradient methods, have been proposed [@Searle2006]. The gradient methods are represented by the iteration equation
+Estimating the variance components by either MLE or REML is a numerical optimization problem. Various iterative methods based on the log likelihood, called gradient methods, have been proposed [@Searle2006]. The gradient methods are represented by the iteration equation
 \begin{equation}
 (\#eq:gradient)
 \theta^{(i+1)} = \theta^{(i)} + \Gamma(\theta^{(i)})\frac{\partial l(\theta^{(i)})}{\partial\theta},
 \end{equation}
-where $\partial l(\theta)/\partial\theta$ is the gradient of the log likelihood function, and $\Gamma(\theta)$ is a modifier matrix of the gradient direction, which can be specified by Newton–Raphson, Fisher scoring or average information, see Supplementary Materials of the manuscript for the details. 
+where $\partial l(\theta)/\partial\theta$ is the gradient of the log likelihood function, and $\Gamma(\theta)$ is a modifier matrix of the gradient direction, which can be specified by Newton–Raphson, Fisher scoring or average information. 
 
 The hypotheses for testing fixed effects and variance components can be respectively defined as
 $$
@@ -68,9 +68,9 @@ $$
 $$
 H_{0, k}: \theta_k \leq 0 ~~\text{versus}~~H_{1,k}: \theta_k > 0,
 $$
-where $\theta_k$, $k=1, \ldots, K$, represent the parameters of variance components $\sigma^2_k$ but are allowed to be negative. The lower boundary of the parameters, $\theta$, can be the negative value such that the variance-covariance matrix, $V_{\theta}$, remains definable (positive definite). Note that the negative lower boundary exists and can be less than $- \sigma^2/\lambda_{max}$, where $\lambda_{max} > 0$, is the largest singular value of $ZZ^T$. If $\theta_k > 0$, then $\sigma_k^2 = \theta_k$ is definable and the mixed model is well-specified. Otherwise, if $\theta_k \le 0$, the mixed model is miss-specified and no random effects are needed.
+where $\theta_k$, $k=1, \ldots, K$, represent the parameters of variance components $\sigma^2_k$ but are allowed to be negative. The lower boundary of the parameters, $\theta$, can be the negative value such that the variance-covariance matrix, $V_{\theta}$, remains definable (positive definite). The negative lower boundary exists and can be less than $- \sigma^2/\lambda_{max}$, where $\lambda_{max} > 0$ is the largest singular value of $ZZ^T$. If $\theta_k > 0$, then $\sigma_k^2 = \theta_k$ is definable and the mixed model is well-specified. Otherwise, if $\theta_k \le 0$, the mixed model is miss-specified and no random effects are needed.
 
-Allowing the parameters of variance components to take negative value avoids the zero boundary problem in hypothesis testing for the variance components. Consequently, the asymptotic properties of the maximum likelihood estimation hold under regularity conditions, which enables us to use z-statistics or t-statistics for hypothesis testing of fixed effects and variance components. The t-statistics for fixed effects are given by
+Allowing the parameters of variance components to take negative value avoids the zero boundary at the null hypothesis for the variance components. Consequently, the asymptotic normality of the maximum likelihood estimation at the null hypothesis hold under regularity conditions, which enables us to use z-statistics or t-statistics for hypothesis testing of fixed effects and variance components. The t-statistics for fixed effects are given by
 \begin{equation}
 (\#eq:tcoef)
 T_i = \frac{\hat\beta_i}{\sqrt{var(\hat\beta_i)}} = \frac{\hat\beta_i}{\sqrt{var(\hat\beta)_{ii}}} ~\sim ~t(n - p).
@@ -99,19 +99,18 @@ ZX = Z^TX, ~ZY = Z^TY^T, ~ZZ = Z^TZ,\\
 Ynorm = [y_1y_1^T, \ldots, y_my_m^T],
 \end{array}
 \end{equation}
-where $Y = [y_1^T, \ldots, y_m^T]^T$ is a $m$-by-$n$ matrix of gene expression profile with each row $y_i$ corresponding to the expression of gene $i$, $i=1,\ldots,m$. Once the summary statistics are precomputed, the summary-level data based algorithm has a complexity of $O(m(p^3 + q^3))$, which doesn’t depend on number of cells (sample size $n$). In single-cell DE analysis, the numbers of fixed and random effects, $p$ and $q$, are relatively small. Therefore, the algorithm is fast and scalable, and requires less computer memory. See Supplemental Materials of the manuscript for details. 
+where $Y = [y_1^T, \ldots, y_m^T]^T$ is a $m$-by-$n$ matrix of gene expression profile with each row $y_i$ corresponding to the expression of gene $i$, $i=1,\ldots,m$. Once the summary statistics are precomputed, the summary-level data based algorithm has a complexity of $O(m(p^3 + q^3))$, which doesn’t depend on number of cells (sample size $n$). In single-cell DE analysis, the numbers of fixed and random effects, $p$ and $q$, are relatively small. Therefore, the algorithm is fast and scalable, and requires less computer memory.
 
 
 # FLASHMM
 
-FLASHMM package provides two functions, lmm and lmmfit, for fitting LMM. The lmm function uses summary statistics as arguments. The lmmfit function is a wrapper function of lmm, which directly uses cell-level data and computes the summary statistics inside the function. The lmmfit function is simple to be operated but it has a limitation of memory use. For large scale data, we should use lmm instead of lmmfit. That is, we precompute the summary-level data by \@ref(eq:sdata) or sslmm function in FLASHMM package, and then use lmm function to fit LMM. FLASHMM provides the lmmtest function to perform statistical test on the fixed effects and the contrasts of fixed effects. 
+FLASHMM package provides two functions, lmm and lmmfit, for fitting LMM. The lmm function uses summary statistics as arguments. The lmmfit function is a wrapper function of lmm, which directly uses cell-level data and computes the summary statistics inside the function. The lmmfit function is simple to be operated but it has a limitation of memory use. For extremely large scale data, we can precompute and store the summary-level data by \@ref(eq:sdata), and then use lmm function to fit LMM. FLASHMM provides the lmmtest function to perform statistical test on the fixed effects and the contrasts of fixed effects. 
 
 In summary, FLASHMM package provides the following functions.
 
 * lmm: fit LMM using summary-level data.
 * lmmfit: fit LMM using cell-level data.
 * lmmtest: perform statistical tests on the fixed effects and their contrasts.
-* sslmm: compute the summary-level data using cell-level data.
 * simuRNAseq: simulate multi-sample multi-cell-type scRNA-seq dataset based on a negative binomial distribution.
 
 
@@ -127,14 +126,13 @@ devtools::install_github("https://github.com/Baderlab/FLASHMM")
 library(FLASHMM)
 ```
 
-### Simulating a scRNA-seq dataset by simuRNAseq
+### scRNA-seq dataset simulated by simuRNAseq
 
 Simulate a multi-sample multi-cell-cluster scRNA-seq dataset comprising 25 samples and 4 clusters (cell-types) with 2 treatments.
 
 ```{r dataset, message = FALSE}
 set.seed(2412)
-dat <- simuRNAseq(nGenes = 50, nCells = 1000, 
-                  nsam = 25, ncls = 4, ntrt = 2, nDEgenes = 6)
+dat <- simuRNAseq(nGenes = 50, nCells = 1000, nsam = 25, ncls = 4, ntrt = 2, nDEgenes = 6)
 
 names(dat)
 ##
@@ -160,10 +158,11 @@ d <- ncol(Z)
 ##
 
 ##(2) LMM fitting
-##Fit LMM by lmmfit using cell-level data.
+
+##Option 1: fit LMM by lmmfit using cell-level data.
 fit <- lmmfit(Y, X, Z, d = d)
 
-##Fit LMM by lmm using summary-level data computed as follows.
+##Option 2: fit LMM by lmm using summary-level data computed as follows.
 ##- Computing summary statistics
 n <- nrow(X)
 XX <- t(X)%*%X; XY <- t(Y%*%X)
@@ -175,27 +174,28 @@ fitss <- lmm(XX, XY, ZX, ZY, ZZ, Ynorm = Ynorm, n = n, d = d)
 identical(fit, fitss)
 ##
 
-##Fit LMM by lmm using summary-level data computed by sslmm.
-##- Computing summary statistics
-ss <- sslmm(X, Y, Z)
-##- Fitting LMM
-fitss <- lmm(summary.stats = ss, d = d)
-
-identical(fit, fitss)
-##
-
 ##(3) Hypothesis tests
-test <- lmmtest(fit)
-#head(test)
 
-##t-values
-all(t(fit$t) == test[, grep("_t", colnames(test))])
-fit$t[, 1:5]
+##Testing coefficients (fixed effects)
+test <- lmmtest(fit)
+head(test)
+##The testing t-value and p-values are also provided in the LMM fit.
+#range(test - cbind(t(fit$coef), t(fit$t), t(fit$p)))
+fit$coef[, 1:4]
+fit$t[, 1:4]
+fit$p[, 1:4]
 ##
 
-##p-values
-all(t(fit$p) == test[, grep("_p", colnames(test))])
-fit$p[, 1:5]
+##Testing contrasts
+##We can make comparisons using contrasts. 
+##For example, the effect of treatment B vs A in all clusters
+ct <- numeric(ncol(X))
+index <- grep("B", colnames(X))
+ct[index] <- 1/length(index)
+ct
+test <- lmmtest(fit, contrast = ct)
+head(test)
+
 ```
 
 
