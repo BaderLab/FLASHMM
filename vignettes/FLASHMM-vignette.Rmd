@@ -133,13 +133,12 @@ Simulate a multi-sample multi-cell-cluster scRNA-seq dataset comprising 25 sampl
 ```{r dataset, message = FALSE}
 set.seed(2412)
 dat <- simuRNAseq(nGenes = 50, nCells = 1000, nsam = 25, ncls = 4, ntrt = 2, nDEgenes = 6)
-
 names(dat)
-##
 
 #counts and meta data
 counts <- dat$counts
 metadata <- dat$metadata
+head(metadata)
 rm(dat)
 ```
 
@@ -155,14 +154,13 @@ Y <- log(counts + 1)
 X <- model.matrix(~ 0 + log(libsize) + cls + cls:trt, data = metadata)
 Z <- model.matrix(~ 0 + sam, data = metadata)
 d <- ncol(Z)
-##
 
 ##(2) LMM fitting
 
 ##Option 1: fit LMM by lmmfit using cell-level data.
 fit <- lmmfit(Y, X, Z, d = d)
 
-##Option 2: fit LMM by lmm using summary-level data computed as follows.
+##Option 2: fit LMM by lmm using summary-level data.
 ##- Computing summary statistics
 n <- nrow(X)
 XX <- t(X)%*%X; XY <- t(Y%*%X)
@@ -172,16 +170,15 @@ Ynorm <- rowSums(Y*Y)
 fitss <- lmm(XX, XY, ZX, ZY, ZZ, Ynorm = Ynorm, n = n, d = d)
 
 identical(fit, fitss)
-##
 
 ##(3) Hypothesis tests
-
 ##Testing coefficients (fixed effects)
 test <- lmmtest(fit)
 #head(test)
+
 ##The testing t-value and p-values are also provided in the LMM fit.
 range(test - cbind(t(fit$coef), t(fit$t), t(fit$p)))
-fit$coef[, 1:4]
+#fit$coef[, 1:4]
 fit$t[, 1:4]
 fit$p[, 1:4]
 ##
@@ -191,6 +188,7 @@ fit$p[, 1:4]
 ##the effects of treatment B vs A in all clusters can be tested 
 ##using the contrast constructed as follows:
 ct <- numeric(ncol(X))
+names(ct) <- colnames(X)
 index <- grep("B", colnames(X))
 ct[index] <- 1/length(index)
 ct
