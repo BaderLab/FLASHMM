@@ -97,7 +97,7 @@ if (is.null(metadata)){
 	ncs <- ncol(counts)
 	metadata <- data.frame(
 	sam = paste0("S", sample.int(nsam, ncs, replace = TRUE)),
-	cls = paste0("C", sample.int(ncls, ncs, replace = TRUE)),
+	cls = as.character(sample.int(ncls, ncs, replace = TRUE)),
 	trt = LETTERS[sample.int(ntrt, ncs, replace = TRUE)])
 	if (samples.nested) {
 		nsamtrt <- c(rmultinom(1, nsam, prob = rep(1/ntrt, ntrt)))
