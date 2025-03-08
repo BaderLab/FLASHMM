@@ -141,14 +141,14 @@ fit$p[, 1:4]
 ##the effects of treatment B vs A in all clusters can be tested 
 ##using the contrast constructed as follows:
 ct <- numeric(ncol(X))
-names(ct) <- colnames(X)
 index <- grep("B", colnames(X))
 ct[index] <- 1/length(index)
 ct
-#> log(libsize)         cls1         cls2         cls3         cls4    cls1:trtB 
-#>         0.00         0.00         0.00         0.00         0.00         0.25 
-#>    cls2:trtB    cls3:trtB    cls4:trtB 
-#>         0.25         0.25         0.25
+#> [1] 0.00 0.00 0.00 0.00 0.00 0.25 0.25 0.25 0.25
+colnames(X)
+#> [1] "log(libsize)" "cls1"         "cls2"         "cls3"         "cls4"        
+#> [6] "cls1:trtB"    "cls2:trtB"    "cls3:trtB"    "cls4:trtB"
+
 test <- lmmtest(fit, contrast = ct)
 head(test)
 #>             _coef         _t        _p
