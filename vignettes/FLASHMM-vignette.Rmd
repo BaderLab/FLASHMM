@@ -126,9 +126,9 @@ devtools::install_github("https://github.com/Baderlab/FLASHMM")
 library(FLASHMM)
 ```
 
-### scRNA-seq dataset simulated by simuRNAseq
+### Simulating a scRNA-seq dataset
 
-Simulate a multi-sample multi-cell-cluster scRNA-seq dataset comprising 25 samples and 4 clusters (cell-types) with 2 treatments.
+Use simuRNAseq function to simulate a multi-sample multi-cell-cluster scRNA-seq dataset comprising 25 samples and 4 clusters (cell-types) with 2 treatments.
 
 ```{r dataset, message = FALSE}
 set.seed(2412)
