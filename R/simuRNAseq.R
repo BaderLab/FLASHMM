@@ -49,15 +49,22 @@
 #' Z <- model.matrix(~ 0 + sam, data = dat$metadata)
 #' d <- ncol(Z)
 #'
-#' #Fitting LMM using cell-level data.
+#' #Fit LMM using cell-level data.
 #' fit <- lmmfit(Y, X, Z, d = d)
 #'
-#' #Fitting LMM using summary-level data.
-#' ss <- sslmm(X, Y, Z)
-#' fitss <- lmm(summary.stats = ss, d = d)
+#' #Fit LMM using summary-level data.
+#' #Compute and store the summary-level data:
+#' n <- nrow(X)
+#' XX <- t(X)%*%X
+#' XY <- t(Y%*%X)
+#' ZX <- t(Z)%*%X
+#' ZY <- t(Y%*%Z)
+#' ZZ <- t(Z)%*%Z
+#' Ynorm <- rowSums(Y*Y)
+#' fitss <- lmm(XX, XY, ZX, ZY, ZZ, Ynorm = Ynorm, n = n, d = d)
 #' identical(fit, fitss)
 #'
-#' #Hypothesis tests
+#' #Hypothesis testing
 #' test <- lmmtest(fit)
 #' head(test)
 #'

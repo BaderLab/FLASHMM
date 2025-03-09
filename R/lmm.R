@@ -9,7 +9,6 @@
 #' @param ZZ t(Z)\%*\%Z.
 #' @param Ynorm Norms for features (each row in Y), that is, Ynorm = rowSums(Y*Y).
 #' @param n Numbers of samples (cells in scRNA-seq), nrow(X).
-#' @param summary.stats A list of the summary statistics: XX, XY, ZX, ZY, ZZ, Ynorm and n, which can be computed by csslmm function.
 #' @param d A vector of (m1,...,mk), mi = ncol(Zi), number of columns in Zi. m1 + ... + mk = ncol(Z), number of columns in Z.
 #' @param theta0 A vector of initial values of the variance components, (s1, ...,sk, s_(k+1)), si = sigma_i^2, the variance component of the i-th type random effects. s_(k+1) = sigma^2, the variance component of model residual error.
 #' @param method The REML with Fisher scoring (FS) iterative algorithm, REML-FS.
@@ -53,7 +52,8 @@
 #' Z <- model.matrix(~ 0 + sam)
 #' d <- ncol(Z)
 #'
-#' #Fitting LMM by summary-level data
+#' #Fit LMM by summary-level data
+#' #Compute and store the summary-level data:
 #' n <- nrow(X)
 #' XX <- t(X)%*%X
 #' XY <- t(Y%*%X)
@@ -61,28 +61,12 @@
 #' ZY <- t(Y%*%Z)
 #' ZZ <- t(Z)%*%Z
 #' Ynorm <- rowSums(Y*Y)
-#' fit1 <- lmm(XX, XY, ZX, ZY, ZZ, Ynorm = Ynorm, n = n, d = d)
-#' str(fit1)
-#'
-#' #Fitting LMM using the summary-level data computed by sslmm
-#' ss <- sslmm(X, Y, Z)
-#' fit2 <- lmm(summary.stats = ss, d = d)
-#' identical(fit1, fit2)
+#' fit <- lmm(XX, XY, ZX, ZY, ZZ, Ynorm = Ynorm, n = n, d = d)
+#' str(fit)
 #'
 #' @export
-lmm <- function(XX, XY, ZX, ZY, ZZ, Ynorm, n, summary.stats = NULL, d, theta0 = NULL, method = "REML-FS", max.iter = 50, epsilon = 1e-5, output.cov = TRUE, output.RE = FALSE)
+lmm <- function(XX, XY, ZX, ZY, ZZ, Ynorm, n, d = ncol(ZZ), theta0 = NULL, method = "REML-FS", max.iter = 50, epsilon = 1e-5, output.cov = TRUE, output.RE = FALSE)
 {
-if (!is.null(summary.stats)){
-stopifnot(all(c("XX", "XY", "ZX", "ZY", "ZZ", "Ynorm", "n") %in% names(summary.stats)))
-	XX <- summary.stats$XX
-	XY <- summary.stats$XY
-	ZX <- summary.stats$ZX
-	ZY <- summary.stats$ZY
-	ZZ <- summary.stats$ZZ
-	Ynorm <- summary.stats$Ynorm
-	n <- summary.stats$n
-}
-
 stopifnot(!any(is.na(XY)), !any(is.na(ZX)), !any(is.na(ZY)))
 p <- ncol(ZX)
 k <- length(d)

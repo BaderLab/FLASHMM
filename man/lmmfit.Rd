@@ -88,11 +88,11 @@ sam[trt == "B"] <- paste0("B", sample.int(q/2, sum(trt == "B"), replace = TRUE))
 Z <- model.matrix(~ 0 + sam)
 d <- ncol(Z)
 
-#Fitting LMM by the cell-level data
+#Fit LMM by the cell-level data
 fit <- lmmfit(Y, X, Z, d = d)
 str(fit)
 
-#Hypothesis tests
+#Hypothesis testing
 lmmtest(fit)
 lmmtest(fit, index = 2)
 lmmtest(fit, contrast = cbind("B-A" = c(-1, 1)))

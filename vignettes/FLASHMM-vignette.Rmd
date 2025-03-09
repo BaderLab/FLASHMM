@@ -327,14 +327,14 @@ d <- ncol(Z)
 
 ```{r LMM fitting, echo = TRUE, message = FALSE, warning = FALSE}
   
-##(1) Fit LMM by cell-level data.
+##Option 1: fit LMM by cell-level data.
 max.iter <- 100
 epsilon <- 1e-5
 fit <- lmmfit(Y, X, Z, d = d, max.iter = max.iter, epsilon = epsilon)
 str(fit)
 ##
 
-##(2) Fit LMM by summary-level data.
+##Option 2: fit LMM by summary-level data.
 ##- Compute the summary-level data.
 n <- nrow(X)
 XX <- t(X)%*%X
@@ -355,7 +355,8 @@ rm(fitss)
 ##Test the treatment effect within all cell-types.
 ##- Construct a contrast by summing the treatment effects across cell-types.
 contrast <- cbind("trt" = numeric(nrow(fit$coef)))
-contrast[grep(":", rownames(fit$coef)), ] <- 1
+index <- grep(":", rownames(fit$coef))
+contrast[index, ] <- 1/length(index)
 
 ##- Test the contrast.
 test <- lmmtest(fit, contrast = contrast)

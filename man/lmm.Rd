@@ -12,8 +12,7 @@ lmm(
   ZZ,
   Ynorm,
   n,
-  summary.stats = NULL,
-  d,
+  d = ncol(ZZ),
   theta0 = NULL,
   method = "REML-FS",
   max.iter = 50,
@@ -36,8 +35,6 @@ lmm(
 \item{Ynorm}{Norms for features (each row in Y), that is, Ynorm = rowSums(Y*Y).}
 
 \item{n}{Numbers of samples (cells in scRNA-seq), nrow(X).}
-
-\item{summary.stats}{A list of the summary statistics: XX, XY, ZX, ZY, ZZ, Ynorm and n, which can be computed by csslmm function.}
 
 \item{d}{A vector of (m1,...,mk), mi = ncol(Zi), number of columns in Zi. m1 + ... + mk = ncol(Z), number of columns in Z.}
 
@@ -100,7 +97,8 @@ sam[trt == "B"] <- paste0("B", sample.int(q/2, sum(trt == "B"), replace = TRUE))
 Z <- model.matrix(~ 0 + sam)
 d <- ncol(Z)
 
-#Fitting LMM by summary-level data
+#Fit LMM by summary-level data
+#Compute and store the summary-level data:
 n <- nrow(X)
 XX <- t(X)\%*\%X
 XY <- t(Y\%*\%X)
@@ -108,12 +106,7 @@ ZX <- t(Z)\%*\%X
 ZY <- t(Y\%*\%Z)
 ZZ <- t(Z)\%*\%Z
 Ynorm <- rowSums(Y*Y)
-fit1 <- lmm(XX, XY, ZX, ZY, ZZ, Ynorm = Ynorm, n = n, d = d)
-str(fit1)
-
-#Fitting LMM using the summary-level data computed by sslmm
-ss <- sslmm(X, Y, Z)
-fit2 <- lmm(summary.stats = ss, d = d)
-identical(fit1, fit2)
+fit <- lmm(XX, XY, ZX, ZY, ZZ, Ynorm = Ynorm, n = n, d = d)
+str(fit)
 
 }
