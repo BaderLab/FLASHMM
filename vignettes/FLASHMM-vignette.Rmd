@@ -106,7 +106,7 @@ where $Y = [y_1^T, \ldots, y_m^T]^T$ is a $m$-by-$n$ matrix of gene expression p
 
 FLASHMM package provides two functions, lmm and lmmfit, for fitting LMM. The lmm function uses summary statistics as arguments. The lmmfit function is a wrapper function of lmm, which directly uses cell-level data and computes the summary statistics inside the function. The lmmfit function is simple to be operated but it has a limitation of memory use. For extremely large scale data, we can precompute and store the summary-level data by \@ref(eq:sdata), and then use lmm function to fit LMM. FLASHMM provides the lmmtest function to perform statistical test on the fixed effects and the contrasts of fixed effects. 
 
-In summary, FLASHMM package provides the following functions.
+In summary, FLASHMM package provides the following main functions.
 
 * lmm: fit LMM using summary-level data.
 * lmmfit: fit LMM using cell-level data.
@@ -179,7 +179,7 @@ test <- lmmtest(fit)
 ##The testing t-value and p-values are also provided in the LMM fit.
 range(test - cbind(t(fit$coef), t(fit$t), t(fit$p)))
 #fit$coef[, 1:4]
-fit$t[, 1:4]
+#fit$t[, 1:4]
 fit$p[, 1:4]
 ##
 
@@ -331,7 +331,7 @@ d <- ncol(Z)
 max.iter <- 100
 epsilon <- 1e-5
 fit <- lmmfit(Y, X, Z, d = d, max.iter = max.iter, epsilon = epsilon)
-str(fit)
+names(fit)
 ##
 
 ##Option 2: fit LMM by summary-level data.
@@ -400,9 +400,6 @@ out$FDR <- p.adjust(out$p, method = "fdr")
 out <- out[order(out$p), ]
 rownames(out) <- NULL
 out[out$FDR <= 0.05, ]
-
-##The simulated DE genes
-dat$DEgenes
 
 sessionInfo()
 
