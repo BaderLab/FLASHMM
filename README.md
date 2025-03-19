@@ -159,3 +159,7 @@ head(test)
 #> Gene5 -0.12106061 -1.3918602 0.1642770
 #> Gene6  0.06756558  1.1553425 0.2482287
 ```
+
+## Citation
+If you find FLASH-MM useful for your publication, please cite:
+Xu & Pouyabahar et al., FLASH-MM: Fast and Scalable Single-Cell Differential Expression Analysis Using Linear Mixed-Effects Models.
