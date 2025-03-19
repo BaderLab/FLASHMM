@@ -162,4 +162,5 @@ head(test)
 
 ## Citation
 If you find FLASH-MM useful for your publication, please cite:
+
 Xu & Pouyabahar et al., FLASH-MM: Fast and Scalable Single-Cell Differential Expression Analysis Using Linear Mixed-Effects Models.
