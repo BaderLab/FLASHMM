@@ -11,7 +11,7 @@ vignette: >
   %\VignetteIndexEntry{Single-cell differential expression analysis with FLASHMM}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
-abstract: FLASHMM is a package for analysis of single-cell differential expression (DE) using a linear mixed-effects model (LMM). The mixed-effects models have become a powerful tool in single-cell studies due to their ability to model intra-subject correlation and inter-subject variability. The classic LMM estimation method faces limitations of speed and computer memory in analysis of large scale scRNA-seq data. The package FLASHMM provides a fast and scalable method to address the scalability of the LMM estimation. FLASHMM is fast and requires less computer memory to fit the LMM. This vignette describes the method for LMM estimation and inference and the R functions for implementing the method, and demonstrates the use of the package via an example.
+abstract: FLASHMM is a package for analysis of single-cell differential expression using a linear mixed-effects model (LMM). The mixed-effects models have become a powerful tool in single-cell studies due to their ability to model intra-subject correlation and inter-subject variability. The classic LMM estimation methods face limitations of computation speed and memory usage in analysis of large scale single-cell transcriptomics data. The package FLASHMM provides a fast and scalable approach to address the scalability and memory usage efficiency in the LMM fitting. This vignette describes the methods for LMM estimation and hypothesis testing and the R functions for implementing the methods, and demonstrates the use of the package via an example.
 header-includes: \usepackage{amsmath, xcolor, colortbl, rotating, graphicx, caption, subcaption}
 bibliography: reference.bib
 link-citations: yes
@@ -24,7 +24,7 @@ knitr::opts_chunk$set(
 )
 ```
 
-# Method
+# Methods
 
 ## LMM parameter estimation and hypothesis testing
 
@@ -80,10 +80,10 @@ The t-statistic for a contrast, a linear combination of the estimated fixed effe
 (\#eq:tcontrast)
 T_c = \frac{c^T\hat\beta}{\sqrt{c^Tvar(\hat\beta) c}} \sim t(n-p).
 \end{equation}
-The z-statistics for the parameters of variance components are given by
+The test statistics for the parameters of variance components are given by
 \begin{equation}
 (\#eq:zvarcomp)
-Z_k = \frac{\hat\theta_k}{\sqrt{[I(\hat\theta)^{-1}]_{kk}}} \sim N(0, 1),
+T_{z_k} = \frac{\hat\theta_k}{\sqrt{[I(\hat\theta)^{-1}]_{kk}}} \sim N(0, 1),
 \end{equation}
 where $I(\theta)$ is the Fisher information matrix. 
 
@@ -102,19 +102,18 @@ Ynorm = [y_1y_1^T, \ldots, y_my_m^T],
 where $Y = [y_1^T, \ldots, y_m^T]^T$ is a $m$-by-$n$ matrix of gene expression profile with each row $y_i$ corresponding to the expression of gene $i$, $i=1,\ldots,m$. Once the summary statistics are precomputed, the summary-level data based algorithm has a complexity of $O(m(p^3 + q^3))$, which doesn’t depend on number of cells (sample size $n$). In single-cell DE analysis, the numbers of fixed and random effects, $p$ and $q$, are relatively small. Therefore, the algorithm is fast and scalable, and requires less computer memory.
 
 
-# FLASHMM
+## FLASHMM
 
-FLASHMM package provides two functions, lmm and lmmfit, for fitting LMM. The lmm function uses summary statistics as arguments. The lmmfit function is a wrapper function of lmm, which directly uses cell-level data and computes the summary statistics inside the function. The lmmfit function is simple to be operated but it has a limitation of memory use. For extremely large scale data, we can precompute and store the summary-level data by \@ref(eq:sdata), and then use lmm function to fit LMM. FLASHMM provides the lmmtest function to perform statistical test on the fixed effects and the contrasts of fixed effects. 
+FLASHMM package provides two functions, *lmm* and *lmmfit*, for fitting LMM. The *lmm* function uses summary statistics as arguments. The *lmmfit* function is a wrapper function of *lmm*, which directly uses cell-level data and computes the summary statistics inside the function. The *lmmfit* function is simple to be operated but it has a limitation of memory use. For extremely large scale data, we can precompute and store the summary-level data by \@ref(eq:sdata), and then use *lmm* function to fit LMM. FLASHMM provides *lmmtest* function to perform statistical test on the fixed effects and the contrasts of the fixed effects. 
 
 In summary, FLASHMM package provides the following main functions.
 
-* lmm: fit LMM using summary-level data.
-* lmmfit: fit LMM using cell-level data.
-* lmmtest: perform statistical tests on the fixed effects and their contrasts.
-* simuRNAseq: simulate multi-sample multi-cell-type scRNA-seq dataset based on a negative binomial distribution.
+* *lmm*: fit LMM using summary-level data.
+* *lmmfit*: fit LMM using cell-level data.
+* *lmmtest*: perform statistical tests on the fixed effects and their contrasts.
+* *contrast.matrix*: construct contrast matrix combining the fixed effects for various comparisons.
+* *simuRNAseq*: simulate multi-sample multi-cell-type scRNA-seq dataset based on a negative binomial distribution.
 
-
-## Quick start
 
 ```{r echo = TRUE, results = "hide", message = FALSE}
 ##Install FLASHMM from CRAN.
@@ -126,159 +125,32 @@ devtools::install_github("https://github.com/Baderlab/FLASHMM")
 library(FLASHMM)
 ```
 
-### Simulating a scRNA-seq dataset
-
-Use simuRNAseq function to simulate a multi-sample multi-cell-cluster scRNA-seq dataset comprising 25 samples and 4 clusters (cell-types) with 2 treatments.
-
-```{r dataset, message = FALSE}
-set.seed(2412)
-dat <- simuRNAseq(nGenes = 50, nCells = 1000, nsam = 25, ncls = 4, ntrt = 2, nDEgenes = 6)
-names(dat)
-
-#counts and meta data
-counts <- dat$counts
-metadata <- dat$metadata
-head(metadata)
-rm(dat)
-```
-
-### DE analysis using LMM
-
-```{r}
-##(1) Model design
-##Y: gene expression profile (log-transformed counts)
-##X: design matrix for fixed effects
-##Z: design matrix for random effects
-
-Y <- log(counts + 1) 
-X <- model.matrix(~ 0 + log(libsize) + cls + cls:trt, data = metadata)
-Z <- model.matrix(~ 0 + sam, data = metadata)
-d <- ncol(Z)
-
-##(2) LMM fitting
-
-##Option 1: fit LMM by lmmfit using cell-level data.
-fit <- lmmfit(Y, X, Z, d = d)
-
-##Option 2: fit LMM by lmm using summary-level data.
-##- Computing summary statistics
-n <- nrow(X)
-XX <- t(X)%*%X; XY <- t(Y%*%X)
-ZX <- t(Z)%*%X; ZY <- t(Y%*%Z); ZZ <- t(Z)%*%Z
-Ynorm <- rowSums(Y*Y)
-##- Fitting LMM
-fitss <- lmm(XX, XY, ZX, ZY, ZZ, Ynorm = Ynorm, n = n, d = d)
-
-identical(fit, fitss)
-
-##(3) Hypothesis tests
-##Testing coefficients (fixed effects)
-test <- lmmtest(fit)
-#head(test)
-
-##The testing t-value and p-values are also provided in the LMM fit.
-range(test - cbind(t(fit$coef), t(fit$t), t(fit$p)))
-#fit$coef[, 1:4]
-#fit$t[, 1:4]
-fit$p[, 1:4]
-##
-
-##Testing contrasts
-##We can make comparisons using contrasts. For example, 
-##the effects of treatment B vs A in all clusters can be tested 
-##using the contrast constructed as follows:
-ct <- numeric(ncol(X))
-names(ct) <- colnames(X)
-index <- grep("B", colnames(X))
-ct[index] <- 1/length(index)
-ct
-test <- lmmtest(fit, contrast = ct)
-head(test)
-
-```
 
 
 # Example
 
-We use a simulated multi-sample multi-cell-type scRNA-seq dataset to illustrate how to utilize FLASHMM to perform single-cell differential expression analysis. We are interested in identifying the genes differentially expressed between two treatments (conditions) within a cell type.
+We use a simulated multi-sample multi-cell-type single-cell RNA-seq (scRNA-seq) dataset to illustrate how to utilize FLASHMM to perform single-cell differential expression (DE) analysis. We are interested in identifying the genes differentially expressed between two treatments (conditions) within a cell type.
 
 
-## Simulating multi-sample multi-cell-type scRNA-seq dataset
+## Simulating the scRNA-seq dataset
 
-We generate a multi-sample multi-cell-type scRNA-seq dataset using a reference dataset by simuRNAseq function in FLASHMM package. We use PBMC 10X droplet-based scRNA-seq dataset [@PBMC2018] as the reference dataset, which contains count data and metadata. The metadata should include 3 columns: individuals (subjects or samples), cell types (clusters), and treatments (conditions) which are named as 'sam', 'cls', and 'trt', respectively. 
+We generate the multi-sample multi-cell-type scRNA-seq dataset by simuRNAseq function in FLASHMM package. The simulated scRNA-seq dataset contains 100 genes and 120,000 cells from 25 samples (subjects) and 10 clusters (cell-types) with 2 treatments. There are 10 differentially expressed genes generated.
 
-Note that the simuRNAseq function can also generate the scRNA-seq dataset without a reference dataset. In this case, the following step for preparing the reference dataset can be skipped.
-
-### Preparing reference dataset
-
-To load the PBMC dataset, we need ExperimentHub package.
-
-```{r, include = TRUE, echo = TRUE, message = FALSE}
-if (!requireNamespace("BiocManager", quietly = TRUE))
-    install.packages("BiocManager")
-if (!requireNamespace("ExperimentHub", quietly = TRUE))
-    BiocManager::install("ExperimentHub")
-if (!requireNamespace("SingleCellExperiment", quietly = TRUE))
-    BiocManager::install("SingleCellExperiment")
-```
-
-```{r Reference dataset, echo = TRUE, message = FALSE}
-library(ExperimentHub)
-
-##Load data.
-eh <- ExperimentHub()
-#query(eh, "Kang")
-sce <- eh[["EH2259"]]
-
-##Remove undetected genes.
-sce <- sce[rowSums(counts(sce) > 0) > 0, ]
-##Remove cells with few or many detected genes (outliers).
-nGenes <- colSums(counts(sce) > 0)
-bx <- boxplot(log(nGenes), plot = FALSE)
-sce <- sce[, nGenes >= exp(bx$stats[1]) & nGenes <= exp(bx$stats[5])]
-##Remove lowly expressed genes.
-##counts per cell (cpc) 
-cpc <- rowSums(counts(sce))/ncol(sce)
-sce <- sce[(rowSums(counts(sce) > 1) >= 10) & (cpc > 0.005), ]
-
-##counts and metadata
-counts <- assay(sce, "counts")
-coldata <- as.data.frame(colData(sce))
-head(coldata)
-all(colnames(counts) == rownames(coldata))
-dim(counts)
-rm(eh, sce)
-
-```
-
-### Generating dataset
-
-We use the reference dataset to generate a scRNA-seq dataset by simuRNAseq function. First we need to specify which columns represent samples (individuals), cell clusters (types), and treatments (experimental conditions) in the reference metadata by 'sam', 'cls', and 'trt', respectively. We also specify the numbers of genes, cells and differentially expressed (DE) genes to be generated. We use default settings for other arguments in simuRNAseq function. The generated dataset contains count data, metadata, and the DE genes specific to a cell cluster. The DE genes can be considered as the positive controls and the others the negative controls. Without confusion, DE can represent either 'differentially expressed' or 'differential expression'.
 
 ```{r Simulate dataset, echo = TRUE, message = FALSE}
-##Specify which columns represent samples, treatments, and cell-types.
-colnames(coldata)[colnames(coldata) == "ind"] <- "sam"  #samples
-colnames(coldata)[colnames(coldata) == "stim"] <- "trt" #treatments
-colnames(coldata)[colnames(coldata) == "cell"] <- "cls" #cell-types
-coldata <- coldata[, c("sam", "trt", "cls")]
-head(coldata)
-##
-
 ##Generate the dataset by simuRNAseq function.
-set.seed(2412)
-dat <- simuRNAseq(counts, nGenes = 100, nCells = 120000, metadata = coldata, 
-                  nsam = 25, ncls = 10, ntrt = 2, nDEgenes = 10, 
+set.seed(2503)
+dat <- simuRNAseq(nGenes = 100, nCells = 120000, nsam = 25, ncls = 10, ntrt = 2, nDEgenes = 10, 
                   minbeta = 0.5, maxbeta = 1, var.randomeffects = 0.1)
 str(dat)
 
-##Remove the reference dataset that is no longer needed in the following analysis.
-rm(counts, coldata)
 ```
 
+The simulated data contains a genes-by-cells matrix of expression counts and a data frame of metadata consisting of 3 columns: samples (sam), cell-types (cls) and treatments (trt).
 
 ## DE analysis of the simulated scRNA-seq data
 
-We perform differential expression analysis of the simulated dataset using FLASHMM package. We are to identify the significantly differentially expressed genes between two treatments in a cell-type. The analyses involve following steps: LMM design, LMM fitting, and exploring LMM fit and the DE genes.
+We perform differential expression analysis of the simulated dataset using FLASHMM package. We are to identify the significantly differentially expressed genes between two treatments in a cell-type. The analyses involve following steps: LMM design, LMM fitting and hypothesis testing, and exploring LMM fit and the DE genes.
 
 **LMM design**: construct design matrices for fixed and random effects described as \@ref(eq:lmm), and compute the gene expression profile. The gene expression is taken as log-transformed count matrix, 
 $$Y = \log(1+\text{counts}),$$
@@ -286,20 +158,22 @@ in which each row corresponds to the expression profile for a gene. The design m
 $$
 X = model.matrix(\sim 0 + log(library.size) + cell.type + cell.type:treatment),
 $$
-where the interaction term $cell.type:treatment$ represents the treatment effect in a specific cell-type. $library.size$ is defined as the total sum of counts across all genes for each cell, a normalization factor of the scRNA-seq counts. We consider the subjects (samples) as random effects that reflect the intra-subject correlation and inter-subject variability. The design matrix for the random effects is given by
+where the interaction term $cell.type:treatment$ represents the treatment effect in a specific cell-type. $library.size$ is a normalization factor of the scRNA-seq counts, calculated by the total sum of counts across all genes for each cell. We consider the subjects (samples) as random effects that reflect the intra-subject correlation and inter-subject variability. The design matrix for the random effects is given by
 $$
 Z = model.matrix(\sim 0 + subject).
 $$
 
-**LMM fitting**: We use either lmm or lmmfit function to fit LMMs for all genes. With the cell-level data matrices $Y$, $X$ and $Z$, the LMMs can be fit by
+**LMM fitting and hypothesis testing**: We use either lmm or lmmfit function to fit LMMs for all genes. With the cell-level data matrices $Y$, $X$ and $Z$, the LMMs can be fit by
 $$lmmfit(Y, X, Z, d = d),$$
-where $d$ is the number of random-effects. For $K$ components of random-effects, $d = (q_1, \ldots, q_K)$, where $q_k$ is the number of columns of the design matrix $Z_k$ for the $k$-th random-effect component. For a large-scale data, the lmmfit function has a problem of computer memory limit. In this case, it is recommended to pre-compute the summary-level data: $XX$, $XY$, $ZX$, $ZY$, $ZZ$, and $Y_{norm}$, defined in \@ref(eq:sdata), and then use the lmm function to fit the LMMs as follows:
+where $d$ is the number of random-effects. For $K$ components of random-effects, $d = (q_1, \ldots, q_K)$, where $q_k$ is the number of columns of the design matrix $Z_k$ for the $k$-th random-effect component. For a large-scale data, the lmmfit function has a problem of computer memory limit. In this case, it is recommended to pre-compute and store the summary-level data: $XX$, $XY$, $ZX$, $ZY$, $ZZ$, and $Y_{norm}$, defined in \@ref(eq:sdata), and then use the lmm function to fit the LMMs as follows:
 $$lmm(XX, XY, ZX, ZY, ZZ, Ynorm = Ynorm, n = n, d = d).$$
-The summary-level data doesn't depend on the sample size $n$. This makes lmm memory-efficient. Both lmm and lmmfit functions also perform hypothesis testing on the fixed effects. We can use lmmtest function to further perform statistical test on the contrasts of fixed effects. 
+The summary-level data doesn't depend on the sample size $n$. This makes lmm memory-efficient. 
 
-LMM fitting returns a list of estimates of LMM parameters (coefficients and variance components), standard errors of the estimates, covariance matrix of the coefficients (fixed effects), and t-values and p-values for hypothesis testing on the coefficients, for each gene. The LMM fitting also returns the numbers of iterations and the first partial derivatives of log likelihood at the termination of iterations for each gene.
+Both lmm and lmmfit functions implement hypothesis testing on the fixed effects (coefficients). We can use lmmtest function to further perform statistical test on the contrasts of fixed effects for various comparisons between different levels. 
 
-**Exploring LMM fit and the DE genes**: We check if the LMM fitting is convergent, and perform hypothesis testing on the variance components of random effects. Then we identify the DE genes based on hypothesis testing p-values for the coefficients (fixed effects). If the absolute first partial derivatives of log likelihood are all less than the convergence tolerance, the LMM fitting converges, otherwise it doesn't converge. The genes for which LMM fitting doesn't converge should be excluded in the subsequent analysis because the estimated coefficients for these genes are not reliable. The DE genes can be identified by adjusting p-values obtained by false discovery rate (FDR) or family-wise error rate (Bonferroni correction). We might exclude the genes with small coefficients (effect size or log-fold-change). 
+LMM fitting returns a list of estimates of LMM parameters (coefficients and variance components), standard errors of the estimates, covariance matrix of the coefficients (fixed effects), and t-values and p-values for hypothesis testing on the coefficients, for each gene. The LMM fitting also returns the numbers of iterations, the first partial derivatives of log likelihood, and the log-likelihood at the termination of iterations for each gene.
+
+**Exploring LMM fit and the DE genes**: We check if the LMM fitting is convergent, and perform hypothesis testing on the variance components of random effects. Then we identify the DE genes based on hypothesis testing p-values for the coefficients (fixed effects). If the absolute first partial derivatives of log likelihood are all less than the convergence tolerance, the LMM fitting converges, otherwise it doesn't converge. The genes for which LMM fitting doesn't converge should be excluded in the subsequent analysis because the estimated coefficients for these genes are not reliable. The DE genes can be identified by adjusting p-values obtained by false discovery rate (FDR) or family-wise error rate (Bonferroni correction). We may also exclude the genes with small coefficients (effect size or log-fold-change). 
 
 
 ### LMM design
@@ -311,9 +185,6 @@ dat$counts <- NULL #Remove the counts.
 
 ##Design matrix for fixed effects
 X <- model.matrix(~ 0 + log(libsize) + cls + cls:trt, data = dat$meta)
-colnames(X) <- gsub("cls", "", colnames(X))
-colnames(X) <- gsub("\\+", "p", colnames(X))
-colnames(X) <- gsub(" ", "_", colnames(X))
 
 ##Design matrix for random effects
 Z <- model.matrix(~ 0 + as.factor(sam), data = dat$meta)
@@ -322,20 +193,16 @@ d <- ncol(Z)
 
 ```
 
-
 ### LMM fitting
 
 ```{r LMM fitting, echo = TRUE, message = FALSE, warning = FALSE}
-  
 ##Option 1: fit LMM by cell-level data.
 max.iter <- 100
 epsilon <- 1e-5
 fit <- lmmfit(Y, X, Z, d = d, max.iter = max.iter, epsilon = epsilon)
-names(fit)
-##
 
 ##Option 2: fit LMM by summary-level data.
-##- Compute the summary-level data.
+##(1) Compute the summary-level data.
 n <- nrow(X)
 XX <- t(X)%*%X
 XY <- t(Y%*%X)
@@ -346,46 +213,70 @@ Ynorm <- rowSums(Y*Y)
 
 rm(X, Y, Z) #release the memory.
 
-##- Fit LMM.
+##(2) Fit LMM.
 fitss <- lmm(XX, XY, ZX, ZY, ZZ, Ynorm = Ynorm, n = n, d = d, 
              max.iter = max.iter, epsilon = epsilon)
-identical(fit, fitss)
+
+identical(fit, fitss) #The two LMM fits are identical.
 rm(fitss)
 
-##Test the treatment effect within all cell-types.
-##- Construct a contrast by summing the treatment effects across cell-types.
-contrast <- cbind("trt" = numeric(nrow(fit$coef)))
-index <- grep(":", rownames(fit$coef))
-contrast[index, ] <- 1/length(index)
+```
 
-##- Test the contrast.
+### Hypothesis testing
+
+```{r}
+##Testing coefficients (fixed effects)
+test <- lmmtest(fit)
+#head(test)
+
+##The testing t-value and p-values are also provided in the LMM fit.
+fit$coef[, 1:4]
+
+##
+#fit$t[, 1:4]
+#fit$p[, 1:4]
+range(test - cbind(t(fit$coef), t(fit$t), t(fit$p))) #identical
+```
+
+The coefficients of the interaction term cls$\ast$:trtB represent the effects of the treatment B versus A in a cell-type (cls$\ast$). We can make a comparison of the treatment B versus A within all cell-types by constructing a contrast by summing the treatment effects across cell-types as follows.
+```{r}
+contrast <- cbind("BvsA" = numeric(nrow(fit$coef)))
+index <- grep(":", rownames(fit$coef))
+contrast[index, ] <- 1
+
+##Test the contrast.
 test <- lmmtest(fit, contrast = contrast)
 head(test)
 
 ```
 
+The contrast can also be constructed by contrast.matrix function as follows.
+```{r}
+BvsA <- paste0(paste0("cls", 1:10, ":trtB"), collapse = "+")
+contrast <- contrast.matrix(c(BvsA = BvsA), model.matrix.names = rownames(fit$coef))
+test <- lmmtest(fit, contrast = contrast)
+head(test)
+```
+
 ### Exploring LMM fit and the DE genes
 
 ```{r DE genes, echo = TRUE, message = FALSE, warning = FALSE}
-
-##(1) Check which LMM fittings converge.
-cvg <- (apply(abs(fit$dlogL), 2, max) < epsilon) 
-sum(cvg) 
-##
+##(1) Check the genes for which LMM fitting converges.
+gc <- (apply(abs(fit$dlogL), 2, max) < epsilon) 
+sum(gc) 
 
 ##(2) Hypothesis testing for variance components:
 ##    H0, theta </= 0 vs H1, theta > 0.
 z <- fit$theta["var1", ]/fit$se.theta["var1", ]
 p <- pnorm(z, lower.tail = FALSE)
-sum(p <= 0.05)
-##
+sum(p < 0.05)
 
 ##(3) The DE genes specific to a cell-type
 ##Coefficients, t-values, and p-values for the genes specific to a cell-type.
 index <- grep(":", rownames(fit$coef))
-ce <- fit$coef[index, cvg]
-tv <- fit$t[index, cvg]
-pv <- fit$p[index, cvg]
+ce <- fit$coef[index, gc]
+tv <- fit$t[index, gc]
+pv <- fit$p[index, gc]
 
 out <- data.frame(
 	gene = rep(colnames(ce), nrow(ce)), 
@@ -401,6 +292,10 @@ out <- out[order(out$p), ]
 rownames(out) <- NULL
 out[out$FDR <= 0.05, ]
 
+##The true DE genes
+dat$DEgenes
+
+##
 sessionInfo()
 
 ```
