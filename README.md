@@ -1,12 +1,12 @@
 
 <!-- README.md is generated from README.Rmd. Please edit that file -->
 
-# FLASHMM
+# FLASH-MM
 
 <!-- badges: start -->
 <!-- badges: end -->
 
-FLASHMM is a package for analysis of single-cell differential expression
+FLASH-MM is a method (package name: FLASHMM) for analysis of single-cell differential expression
 (DE) using a linear mixed- effects model (LMM). The mixed-effects model
 has become a powerful tool in single-cell studies due to their ability
 to model intra-subject correlation and inter-subject variability.
@@ -159,3 +159,8 @@ head(test)
 #> Gene5 -0.12106061 -1.3918602 0.1642770
 #> Gene6  0.06756558  1.1553425 0.2482287
 ```
+
+## Citation
+If you find FLASH-MM useful for your publication, please cite:
+
+Xu & Pouyabahar et al., FLASH-MM: Fast and Scalable Single-Cell Differential Expression Analysis Using Linear Mixed-Effects Models.
