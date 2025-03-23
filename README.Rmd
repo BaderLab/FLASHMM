@@ -13,12 +13,12 @@ knitr::opts_chunk$set(
 )
 ```
 
-# FLASHMM
+# FLASH-MM
 
 <!-- badges: start -->
 <!-- badges: end -->
 
-FLASHMM is a package for analysis of single-cell differential expression (DE) using a linear mixed- effects model (LMM). The mixed-effects model has become a powerful tool in single-cell studies due to their ability to model intra-subject correlation and inter-subject variability.
+FLASH-MM is a method (package name: FLASHMM) for analysis of single-cell differential expression (DE) using a linear mixed- effects model (LMM). The mixed-effects model has become a powerful tool in single-cell studies due to their ability to model intra-subject correlation and inter-subject variability.
 
 FLASHMM package provides two functions, lmm and lmmfit, for fitting LMM. The lmm function uses summary-level statistics as arguments. The lmmfit function is a wrapper function of lmm, which directly uses cell-level data and computes the summary statistics inside the function. The lmmfit function is simple to be operated but it has a limitation of memory use. For large scale data, it is recommended to precompute and store the summary statistics and then use lmm function to fit LMM.
 
@@ -27,6 +27,7 @@ In summary, FLASHMM package provides the following functions.
 * lmm: fit LMM using summary-level data.
 * lmmfit: fit LMM using cell-level data.
 * lmmtest: perform statistical tests on fixed effects and the contrasts of the fixed effects.
+* contrast.matrix: construct contrast matrix combining the fixed effects for various comparisons.
 * simuRNAseq: simulate multi-sample multi-cell-type scRNA-seq dataset based on a negative binomial distribution.
 
 ## Installation
@@ -119,10 +120,14 @@ fit$p[, 1:4]
 ##using the contrast constructed as follows:
 ct <- numeric(ncol(X))
 index <- grep("B", colnames(X))
-ct[index] <- 1/length(index)
-ct
-colnames(X)
+ct[index] <- 1
 
 test <- lmmtest(fit, contrast = ct)
 head(test)
 ```
+
+# Citation
+
+If you find FLASH-MM useful for your publication, please cite:
+
+Xu & Pouyabahar et al., FLASH-MM: Fast and Scalable Single-Cell Differential Expression Analysis Using Linear Mixed-Effects Models.

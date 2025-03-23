@@ -6,10 +6,11 @@
 <!-- badges: start -->
 <!-- badges: end -->
 
-FLASH-MM is a method (package name: FLASHMM) for analysis of single-cell differential expression
-(DE) using a linear mixed- effects model (LMM). The mixed-effects model
-has become a powerful tool in single-cell studies due to their ability
-to model intra-subject correlation and inter-subject variability.
+FLASH-MM is a method (package name: FLASHMM) for analysis of single-cell
+differential expression (DE) using a linear mixed- effects model (LMM).
+The mixed-effects model has become a powerful tool in single-cell
+studies due to their ability to model intra-subject correlation and
+inter-subject variability.
 
 FLASHMM package provides two functions, lmm and lmmfit, for fitting LMM.
 The lmm function uses summary-level statistics as arguments. The lmmfit
@@ -25,6 +26,8 @@ In summary, FLASHMM package provides the following functions.
 - lmmfit: fit LMM using cell-level data.
 - lmmtest: perform statistical tests on fixed effects and the contrasts
   of the fixed effects.
+- contrast.matrix: construct contrast matrix combining the fixed effects
+  for various comparisons.
 - simuRNAseq: simulate multi-sample multi-cell-type scRNA-seq dataset
   based on a negative binomial distribution.
 
@@ -142,25 +145,22 @@ fit$p[, 1:4]
 ##using the contrast constructed as follows:
 ct <- numeric(ncol(X))
 index <- grep("B", colnames(X))
-ct[index] <- 1/length(index)
-ct
-#> [1] 0.00 0.00 0.00 0.00 0.00 0.25 0.25 0.25 0.25
-colnames(X)
-#> [1] "log(libsize)" "cls1"         "cls2"         "cls3"         "cls4"        
-#> [6] "cls1:trtB"    "cls2:trtB"    "cls3:trtB"    "cls4:trtB"
+ct[index] <- 1
 
 test <- lmmtest(fit, contrast = ct)
 head(test)
 #>             _coef         _t        _p
-#> Gene1  0.09445436  1.4753256 0.1404426
-#> Gene2  0.10333114  1.4540794 0.1462409
-#> Gene3 -0.02117872 -0.2900354 0.7718498
-#> Gene4  0.10281315  0.9531558 0.3407436
-#> Gene5 -0.12106061 -1.3918602 0.1642770
-#> Gene6  0.06756558  1.1553425 0.2482287
+#> Gene1  0.37781746  1.4753256 0.1404426
+#> Gene2  0.41332455  1.4540794 0.1462409
+#> Gene3 -0.08471487 -0.2900354 0.7718498
+#> Gene4  0.41125261  0.9531558 0.3407436
+#> Gene5 -0.48424244 -1.3918602 0.1642770
+#> Gene6  0.27026233  1.1553425 0.2482287
 ```
 
-## Citation
+# Citation
+
 If you find FLASH-MM useful for your publication, please cite:
 
-Xu & Pouyabahar et al., FLASH-MM: Fast and Scalable Single-Cell Differential Expression Analysis Using Linear Mixed-Effects Models.
+Xu & Pouyabahar et al., FLASH-MM: Fast and Scalable Single-Cell
+Differential Expression Analysis Using Linear Mixed-Effects Models.
