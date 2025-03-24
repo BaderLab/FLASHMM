@@ -19,10 +19,7 @@ Suggests:
     knitr,
     bookdown,
     rmarkdown,
-    devtools,
-    BiocManager,
-    SingleCellExperiment,
-    ExperimentHub
+    devtools
 VignetteBuilder: knitr
 URL: https://github.com/BaderLab/FLASHMM
 BugReports: https://github.com/BaderLab/FLASHMM/issues
