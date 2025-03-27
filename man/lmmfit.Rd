@@ -11,7 +11,7 @@ lmmfit(
   d,
   theta0 = NULL,
   nBlocks = ceiling(nrow(Y) * ncol(Y) * 1e-08),
-  method = "REML-FS",
+  method = c("REML", "ML"),
   max.iter = 50,
   epsilon = 1e-05,
   output.cov = TRUE,
@@ -45,6 +45,8 @@ lmmfit(
 A list containing the following components:
 
 dlogL First partial derivatives of log-likelihoods for each feature (gene).
+
+logLik Maximum log-likelihoods (ML) or log-restricted-likelihood (REML) for each feature (gene).
 
 niter Nmbers of iterations for each feature (gene).
 

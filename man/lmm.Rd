@@ -14,7 +14,7 @@ lmm(
   n,
   d = ncol(ZZ),
   theta0 = NULL,
-  method = "REML-FS",
+  method = c("REML", "ML"),
   max.iter = 50,
   epsilon = 1e-05,
   output.cov = TRUE,
@@ -40,7 +40,7 @@ lmm(
 
 \item{theta0}{A vector of initial values of the variance components, (s1, ...,sk, s_(k+1)), si = sigma_i^2, the variance component of the i-th type random effects. s_(k+1) = sigma^2, the variance component of model residual error.}
 
-\item{method}{The REML with Fisher scoring (FS) iterative algorithm, REML-FS.}
+\item{method}{Either REML or ML with Fisher scoring (FS) iterative algorithm.}
 
 \item{max.iter}{The maximal number of iterations for the iterative algorithm.}
 
@@ -54,6 +54,8 @@ lmm(
 A list containing the following components:
 
 dlogL First partial derivatives of log-likelihoods for each feature (gene).
+
+logLik Either log maximum likelihood (ML) or log restricted maximum likelihood (REML) for each feature (gene). The log restricted maximum likelihood may have a constant difference from other computations. The constant difference is related to the fixed design matrix, X.
 
 niter Nmbers of iterations for each feature (gene).
 

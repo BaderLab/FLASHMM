@@ -16,6 +16,7 @@
 #'
 #' @return A list containing the following components:
 #' @return dlogL First partial derivatives of log-likelihoods for each feature (gene).
+#' @return logLik Maximum log-likelihoods (ML) or log-restricted-likelihood (REML) for each feature (gene).
 #' @return niter Nmbers of iterations for each feature (gene).
 #' @return coef A matrix of estimated coefficients (fixed effects), each column corresponds to a feature (gene) and each row one covariate.
 #' @return se A matrix of the standard errors of the estimated coefficients.
@@ -60,13 +61,19 @@
 #' lmmtest(fit, contrast = cbind("B-A" = c(-1, 1)))
 #'
 #' @export
-lmmfit <- function(Y, X, Z, d, theta0 = NULL, nBlocks = ceiling(nrow(Y)*ncol(Y)*1e-8), method = "REML-FS", max.iter = 50, epsilon = 1e-5, output.cov = TRUE, output.RE = FALSE)
+lmmfit <- function(Y, X, Z, d, theta0 = NULL, nBlocks = ceiling(nrow(Y)*ncol(Y)*1e-8), method = c("REML", "ML"), max.iter = 50, epsilon = 1e-5, output.cov = TRUE, output.RE = FALSE)
 {
 stopifnot(!any(is.na(Y)), !any(is.na(X)), !any(is.na(Z)))
+if (is.vector(Y)) Y <- t(Y)
 stopifnot(ncol(Y) == nrow(X), ncol(Y) == nrow(Z))
 
+method <- match.arg(method)
+
 nr <- nrow(Y)
-if (nBlocks > nr/2) stop("nBlocks > nrow(Y)/2")
+if (nBlocks > nr){
+	message(paste0("Note: nBlocks=", nBlocks, " by default, changed to nrow(Y), i.e., nBlocks=", nr, "."))
+	nBlocks <- nr	
+}
 size <- round(nr/nBlocks)
 if (nBlocks*size < nr) size <- round(nr/nBlocks) + 1
 
@@ -75,9 +82,9 @@ ZY <- NULL
 Ynorm <- NULL
 for (i in 1:nBlocks){
   j <- (1+(i-1)*size):(min(nr, i*size))
-  XY <- cbind(XY, t(Y[j, ]%*%X))
-  ZY <- cbind(ZY, t(Y[j, ]%*%Z))
-  Ynorm <- c(Ynorm, rowSums(Y[j, ]*Y[j, ]))
+  XY <- cbind(XY, t(Y[j, , drop = FALSE]%*%X))
+  ZY <- cbind(ZY, t(Y[j, , drop = FALSE ]%*%Z))
+  Ynorm <- c(Ynorm, rowSums(Y[j, , drop = FALSE]*Y[j, , drop = FALSE]))
 }
 
 n <- nrow(X)
