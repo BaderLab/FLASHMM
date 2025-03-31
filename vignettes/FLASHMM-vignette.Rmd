@@ -3,16 +3,15 @@ title: "Single-cell differential expression analysis with FLASHMM"
 author: "Changjiang Xu, Delaram Pouyabahar, Veronique Voisin, and Gary D. Bader"
 date: '`r format(Sys.Date(), "%B %d, %Y")`'
 output:
-    bookdown::html_document2:
-      base_format: rmarkdown::html_vignette
-      number_sections: true
-      toc: yes
+  rmarkdown::html_vignette:
+    mathjax: "https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js"
+    toc: true
+    number_sections: true
 vignette: >
   %\VignetteIndexEntry{Single-cell differential expression analysis with FLASHMM}
-  %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
-abstract: FLASHMM is a package for analysis of single-cell differential expression using a linear mixed-effects model (LMM). The mixed-effects models have become a powerful tool in single-cell studies due to their ability to model intra-subject correlation and inter-subject variability. The classic LMM estimation methods face limitations of computation speed and memory usage in analysis of large scale single-cell transcriptomics data. The package FLASHMM provides a fast and scalable approach to address the scalability and memory usage efficiency in the LMM fitting. This vignette describes the methods for LMM estimation and hypothesis testing and the R functions for implementing the methods, and demonstrates the use of the package via an example.
-header-includes: \usepackage{amsmath, xcolor, colortbl, rotating, graphicx, caption, subcaption}
+  %\VignetteEngine{knitr::rmarkdown}
+abstract: FLASHMM is a package for single-cell differential expression analysis using linear mixed-effects models (LMMs). Mixed-effects models have become a powerful tool in single-cell studies due to their ability to model intra-subject correlation and inter-subject variability. However, classic LMM estimation methods face limitations in computational speed and memory usage when applied to large-scale single-cell transcriptomics data. The FLASHMM package provides a fast and scalable approach to address scalability and memory efficiency in LMM fitting. This vignette describes the methods for LMM estimation and hypothesis testing, as well as the R functions for implementing these methods, and demonstrates the use of the package through an example.
 bibliography: reference.bib
 link-citations: yes
 ---
@@ -24,13 +23,22 @@ knitr::opts_chunk$set(
 )
 ```
 
+```{=html}
+<script>
+MathJax = {
+  tex: {
+    tags: 'ams'
+  }
+};
+</script>
+```
+
 # Methods
 
 ## LMM parameter estimation and hypothesis testing
 
 Consider the linear mixed-effects model (LMM) as expressed below [@Searle2006]
-\begin{equation}
-(\#eq:lmm)
+\begin{equation}\label{eq:lmm}
 y = X\beta + Zb + \epsilon,
 \end{equation}
 where $y$ is an $n\times 1$ vector of observed responses, $X$ is an $n\times p$ design matrix for fixed effects $\beta$, $Z$ is an $n\times q$ design matrix for random effects $b$, and $\epsilon$ is an $n\times 1$ vector of residual errors. The term of random effects may be a combination of various components,
@@ -45,7 +53,7 @@ $$b_k \sim N(\mathbf{0}, \sigma^2_k I_{q_k})\quad\text{and}\quad\epsilon \sim N(
 
 Here $\mathbf{0}$ is a vector or matrix of zero elements, $I_n$ is an $n\times n$ identity matrix, and $\sigma^2_k$ and $\sigma^2$ are unknown parameters, called variance components. 
 
-@HartleyRao1967 developed the maximum likelihood estimation (MLE) method for estimating the LMM parameters (fixed effects and variance components). @PattersonThompson1971 proposed a modified maximum likelihood procedure which partitions the data into two mutually uncorrelated parts, one being free of the fixed effects used for estimating variance components, called restricted maximum likelihood (REML) estimator. The REML estimator is unbiased. The MLE of variance components is biased in general. Both methods are asymptotically identical for estimating variance components. With variance components, $\theta$, estimated, the fixed effects estimated by either MLE or REML are given as follows
+@HartleyRao1967 developed the maximum likelihood (ML) method for estimating the LMM parameters (fixed effects and variance components). @PattersonThompson1971 proposed a modified maximum likelihood procedure which partitions the data into two mutually uncorrelated parts, one being free of the fixed effects used for estimating variance components, called restricted maximum likelihood (REML) method. The REML estimator is unbiased. The ML estimator of variance components is biased in general. Both methods are asymptotically identical for estimating variance components. With variance components, $\theta$, estimated, the fixed effects estimated by either ML or REML are given as follows
 $$
 \hat\beta = (X^TV_{\theta}^{-1}X )^{-1}X^TV_{\theta}^{-1}y,
 $$
@@ -54,12 +62,11 @@ $$var(\hat\beta) = (X^TV_{\theta}^{-1}X)^{-1},$$
 where $\theta = (\theta_0, \theta_1,\ldots, \theta_K)$, $\theta_0 = \sigma^2$, $\theta_k = \sigma^2_k$, and
 $$V_{\theta} = \theta_0 I_n + \theta_1 Z_1Z_1^T + \ldots + \theta_K Z_KZ_K^T.$$
 
-Estimating the variance components by either MLE or REML is a numerical optimization problem. Various iterative methods based on the log likelihood, called gradient methods, have been proposed [@Searle2006]. The gradient methods are represented by the iteration equation
-\begin{equation}
-(\#eq:gradient)
+Estimating the variance components by either ML or REML is a numerical optimization problem. Various iterative methods based on the log likelihood, called gradient methods, have been proposed [@Searle2006]. The gradient methods are represented by the iteration equation
+\begin{equation}\label{eq:gradient}
 \theta^{(i+1)} = \theta^{(i)} + \Gamma(\theta^{(i)})\frac{\partial l(\theta^{(i)})}{\partial\theta},
 \end{equation}
-where $\partial l(\theta)/\partial\theta$ is the gradient of the log likelihood function, and $\Gamma(\theta)$ is a modifier matrix of the gradient direction, which can be specified by Newton–Raphson, Fisher scoring or average information. 
+where $\partial l(\theta)/\partial\theta$ is the gradient of the log likelihood function, and $\Gamma(\theta)$ is a modifier matrix of the gradient direction, which can be specified by Newton–Raphson, Fisher scoring or average information. The Newton-Raphson method uses the inverse Hessian matrix as a modifier, while the Fisher scoring method uses the inverse of the expectation of the Hessian matrix. The average information method uses the inverse of the average Hessian matrix and its expectation. We use the Fisher scoring method. The Fisher scoring method is more stable than others because the Hessian matrix may not be positive definite but its expectation is positive definite. 
 
 The hypotheses for testing fixed effects and variance components can be respectively defined as
 $$
@@ -68,43 +75,43 @@ $$
 $$
 H_{0, k}: \theta_k \leq 0 ~~\text{versus}~~H_{1,k}: \theta_k > 0,
 $$
-where $\theta_k$, $k=1, \ldots, K$, represent the parameters of variance components $\sigma^2_k$ but are allowed to be negative. The lower boundary of the parameters, $\theta$, can be the negative value such that the variance-covariance matrix, $V_{\theta}$, remains definable (positive definite). The negative lower boundary exists and can be less than $- \sigma^2/\lambda_{max}$, where $\lambda_{max} > 0$ is the largest singular value of $ZZ^T$. If $\theta_k > 0$, then $\sigma_k^2 = \theta_k$ is definable and the mixed model is well-specified. Otherwise, if $\theta_k \le 0$, the mixed model is miss-specified and no random effects are needed.
+where $\theta_k$, $k=1, \ldots, K$, represent the parameters of variance components $\sigma^2_k$ but are allowed to be negative. The lower boundary of the parameters, $\theta$, can be the negative value such that the variance-covariance matrix, $V_{\theta}$, remains definable (positive definite). The negative lower boundary exists and can be less than $- \sigma^2/\lambda_{max}$, where $\lambda_{max} > 0$ is the largest singular value of $ZZ^T$. If $\theta_k > 0$, then $\sigma_k^2 = \theta_k$ is definable and the mixed model is well-specified. Otherwise, if $\theta_k \le 0$, the mixed model is miss-specified and the $k$-th random-effect component shouldn't be included.
 
-Allowing the parameters of variance components to take negative value avoids the zero boundary at the null hypothesis for the variance components. Consequently, the asymptotic normality of the maximum likelihood estimation at the null hypothesis hold under regularity conditions, which enables us to use z-statistics or t-statistics for hypothesis testing of fixed effects and variance components. The t-statistics for fixed effects are given by
+Allowing the parameters of variance components to take negative value avoids the zero boundary at the null hypothesis for the variance components. Consequently, the asymptotic normality of the maximum likelihood estimation at the null hypothesis holds under regularity conditions, which enables us to use z-statistics or t-statistics for hypothesis testing of the fixed effects and variance components. The t-statistics for fixed effects are given by
 \begin{equation}
-(\#eq:tcoef)
+\label{eq:tcoef}
 T_i = \frac{\hat\beta_i}{\sqrt{var(\hat\beta_i)}} = \frac{\hat\beta_i}{\sqrt{var(\hat\beta)_{ii}}} ~\sim ~t(n - p).
 \end{equation}
 The t-statistic for a contrast, a linear combination of the estimated fixed effects, $c^T\hat\beta$, is 
 \begin{equation}
-(\#eq:tcontrast)
+\label{eq:tcontrast}
 T_c = \frac{c^T\hat\beta}{\sqrt{c^Tvar(\hat\beta) c}} \sim t(n-p).
 \end{equation}
 The test statistics for the parameters of variance components are given by
 \begin{equation}
-(\#eq:zvarcomp)
-T_{z_k} = \frac{\hat\theta_k}{\sqrt{[I(\hat\theta)^{-1}]_{kk}}} \sim N(0, 1),
+\label{eq:zvarcomp}
+T_{\theta_k} = \frac{\hat\theta_k}{\sqrt{[I(\hat\theta)^{-1}]_{kk}}} \sim N(0, 1),
 \end{equation}
 where $I(\theta)$ is the Fisher information matrix. 
 
 
 ## Fast and scalable algorithm
 
-We developed a summary statistics based algorithm for implementing the gradient method \@ref(eq:gradient). Let $XX$, $XY$, $ZX$, $ZY$, and $ZZ$ denote a matrix, respectively, which define the summary statistics that are computed from cell-level data $X$, $Y$ and $Z$ as follows: 
+We developed a summary statistics based algorithm for implementing the gradient method \eqref{eq:gradient}. Let $XX$, $XY$, $ZX$, $ZY$, and $ZZ$ denote a matrix, respectively, which define the summary statistics that are computed from cell-level data $X$, $Y$ and $Z$ as follows: 
 \begin{equation}
-(\#eq:sdata)
+\label{eq:sdata}
 \begin{array}{l}
 XX = X^TX, ~XY = X^TY^T,\\
 ZX = Z^TX, ~ZY = Z^TY^T, ~ZZ = Z^TZ,\\
 Ynorm = [y_1y_1^T, \ldots, y_my_m^T],
 \end{array}
 \end{equation}
-where $Y = [y_1^T, \ldots, y_m^T]^T$ is a $m$-by-$n$ matrix of gene expression profile with each row $y_i$ corresponding to the expression of gene $i$, $i=1,\ldots,m$. Once the summary statistics are precomputed, the summary-level data based algorithm has a complexity of $O(m(p^3 + q^3))$, which doesn’t depend on number of cells (sample size $n$). In single-cell DE analysis, the numbers of fixed and random effects, $p$ and $q$, are relatively small. Therefore, the algorithm is fast and scalable, and requires less computer memory.
+where $Y = [y_1^T, \ldots, y_m^T]^T$ is a $m$-by-$n$ matrix of gene expression profile with each row $y_i$ corresponding to the expression of gene $i$, $i=1,\ldots,m$, $m$ is the number of genes and $n$ is the number of cells (sample size). The summary statistics can be precomputed and stored. The summary statistics based algorithm has a complexity of $O(m(p^3 + q^3))$, which doesn’t depend on number of cells (sample size $n$). In single-cell differential expression (DE) analysis, the numbers of fixed and random effects, $p$ and $q$, are relatively small. Therefore, the algorithm is fast and scalable, and requires less computer memory.
 
 
 ## FLASHMM
 
-FLASHMM package provides two functions, *lmm* and *lmmfit*, for fitting LMM. The *lmm* function uses summary statistics as arguments. The *lmmfit* function is a wrapper function of *lmm*, which directly uses cell-level data and computes the summary statistics inside the function. The *lmmfit* function is simple to be operated but it has a limitation of memory use. For extremely large scale data, we can precompute and store the summary-level data by \@ref(eq:sdata), and then use *lmm* function to fit LMM. FLASHMM provides *lmmtest* function to perform statistical test on the fixed effects and the contrasts of the fixed effects. 
+FLASHMM package provides two functions, *lmm* and *lmmfit*, for fitting LMM. The *lmm* function uses summary statistics as arguments. The *lmmfit* function is a wrapper function of *lmm*, which directly uses cell-level data and computes the summary statistics inside the function. The *lmmfit* function is simple to be operated but it has a limitation of memory use. For extremely large scale data, we can precompute the summary-level data by \eqref{eq:sdata}, and then use *lmm* function to fit LMM. FLASHMM provides *lmmtest* function to perform statistical test on the fixed effects and the contrasts of the fixed effects. 
 
 In summary, FLASHMM package provides the following main functions.
 
@@ -129,30 +136,49 @@ library(FLASHMM)
 
 # Example
 
-We use a simulated multi-sample multi-cell-type single-cell RNA-seq (scRNA-seq) dataset to illustrate how to utilize FLASHMM to perform single-cell differential expression (DE) analysis. We are interested in identifying the genes differentially expressed between two treatments (conditions) within a cell type.
+We use a simulated multi-sample multi-cell-type single-cell RNA-seq (scRNA-seq) dataset to illustrate how to utilize FLASHMM to perform single-cell differential expression analysis. In this example, we are interested in identifying the genes differentially expressed between two treatments (conditions) within a cell type.
 
 
-## Simulating the scRNA-seq dataset
+## Simulating the scRNA-seq data
 
-We generate the multi-sample multi-cell-type scRNA-seq dataset by simuRNAseq function in FLASHMM package. The simulated scRNA-seq dataset contains 100 genes and 120,000 cells from 25 samples (subjects) and 10 clusters (cell-types) with 2 treatments. There are 10 differentially expressed genes generated.
+We simulate the multi-sample multi-cell-type scRNA-seq data by simuRNAseq function in FLASHMM package. The simuRNAseq function can generate the scRNA-seq data, with or without a reference dataset. The reference dataset contains count data and metadata. The count data is a genes-by-cells matrix. The metadata must be a data frame containing three columns: samples (subjects), cell-types (clusters), and treatments (experimental conditions), and the three columns must be named ‘sam’, ‘cls’, and ‘trt’, respectively.
 
+For simplicity and demonstration purposes, we use a simulated reference dataset to generate the scRNA-seq data. First we simulate the reference dataset.
+
+```{r Reference dataset, echo = TRUE, message = FALSE}
+##Generate a reference dataset by simuRNAseq function.
+set.seed(2502)
+refdata <- simuRNAseq(nGenes = 2000, nCells = 10000)
+
+##counts
+counts <- refdata$counts
+##metadata
+metadata <- refdata$metadata
+head(metadata)
+
+rm(refdata)
+```
+
+For the simulated reference dataset, we don't need to change the metadata column names because the columns of samples, clusters, and treatments, are already named ‘sam’, ‘cls’, and ‘trt’, respectively. But, for a real biological reference dataset, we need to change the metadata column names.
+
+Next we use the reference counts and metadata to simulate scRNA-seq data that contains 100 genes and 100,000 cells from 25 samples (subjects) and 10 clusters (cell-types) with 2 treatments. There are 10 differentially expressed genes.
 
 ```{r Simulate dataset, echo = TRUE, message = FALSE}
-##Generate the dataset by simuRNAseq function.
+##Generate the scRNA-seq data by simuRNAseq function.
 set.seed(2503)
-dat <- simuRNAseq(nGenes = 100, nCells = 120000, nsam = 25, ncls = 10, ntrt = 2, nDEgenes = 10, 
-                  minbeta = 0.5, maxbeta = 1, var.randomeffects = 0.1)
+dat <- simuRNAseq(counts, metadata = metadata, nGenes = 100, nCells = 100000, nsam = 25, 
+       ncls = 10, ntrt = 2, nDEgenes = 10, minbeta = 0.5, maxbeta = 1, var.randomeffects = 0.1)
 str(dat)
-
+rm(counts, metadata)
 ```
 
 The simulated data contains a genes-by-cells matrix of expression counts and a data frame of metadata consisting of 3 columns: samples (sam), cell-types (cls) and treatments (trt).
 
-## DE analysis of the simulated scRNA-seq data
+## Analyzing the simulated scRNA-seq data
 
-We perform differential expression analysis of the simulated dataset using FLASHMM package. We are to identify the significantly differentially expressed genes between two treatments in a cell-type. The analyses involve following steps: LMM design, LMM fitting and hypothesis testing, and exploring LMM fit and the DE genes.
+We perform differential expression analysis of the simulated dataset using FLASHMM package. We are to identify the significantly differentially expressed genes between two treatments in a cell-type. The analyses involve following steps: LMM design, LMM fitting and hypothesis testing, exploring LMM fit and the differetially expressed (DE) genes.
 
-**LMM design**: construct design matrices for fixed and random effects described as \@ref(eq:lmm), and compute the gene expression profile. The gene expression is taken as log-transformed count matrix, 
+**LMM design**: construct design matrices for fixed and random effects described as \eqref{eq:lmm}, and compute the gene expression profile. The gene expression is taken as log-transformed count matrix, 
 $$Y = \log(1+\text{counts}),$$
 in which each row corresponds to the expression profile for a gene. The design matrix for the fixed effects can be created by the function model.matrix, as follows
 $$
@@ -165,15 +191,15 @@ $$
 
 **LMM fitting and hypothesis testing**: We use either lmm or lmmfit function to fit LMMs for all genes. With the cell-level data matrices $Y$, $X$ and $Z$, the LMMs can be fit by
 $$lmmfit(Y, X, Z, d = d),$$
-where $d$ is the number of random-effects. For $K$ components of random-effects, $d = (q_1, \ldots, q_K)$, where $q_k$ is the number of columns of the design matrix $Z_k$ for the $k$-th random-effect component. For a large-scale data, the lmmfit function has a problem of computer memory limit. In this case, it is recommended to pre-compute and store the summary-level data: $XX$, $XY$, $ZX$, $ZY$, $ZZ$, and $Y_{norm}$, defined in \@ref(eq:sdata), and then use the lmm function to fit the LMMs as follows:
+where $d$ is the number of random-effects. For $K$ components of random-effects, $d = (q_1, \ldots, q_K)$, where $q_k$ is the number of columns of the design matrix $Z_k$ for the $k$-th random-effect component. For a large-scale data, the lmmfit function has a problem of computer memory limit. In this case, it is recommended to pre-compute and store the summary-level data: $XX$, $XY$, $ZX$, $ZY$, $ZZ$, and $Y_{norm}$, defined in \eqref{eq:sdata}, and then use the lmm function to fit the LMMs as follows:
 $$lmm(XX, XY, ZX, ZY, ZZ, Ynorm = Ynorm, n = n, d = d).$$
-The summary-level data doesn't depend on the sample size $n$. This makes lmm memory-efficient. 
+The summary-level data doesn't depend on the sample size $n$. This makes lmm memory-efficient. The default method in the lmm and lmmfit functions is restricted maximum likelihood (REML), that is, method = 'REML'. If you use the maximum likelihood (ML) method to fit the LMM, set method = 'ML' in the lmm and lmmfit functions.
 
-Both lmm and lmmfit functions implement hypothesis testing on the fixed effects (coefficients). We can use lmmtest function to further perform statistical test on the contrasts of fixed effects for various comparisons between different levels. 
+In addition, the lmm and lmmfit functions perform hypothesis testing on the fixed effects (coefficients). We can also use the lmmtest function to conduct statistical tests on both the fixed effects and their contrasts for various comparisons between different levels.
 
-LMM fitting returns a list of estimates of LMM parameters (coefficients and variance components), standard errors of the estimates, covariance matrix of the coefficients (fixed effects), and t-values and p-values for hypothesis testing on the coefficients, for each gene. The LMM fitting also returns the numbers of iterations, the first partial derivatives of log likelihood, and the log-likelihood at the termination of iterations for each gene.
+LMM fitting returns a list of estimates of LMM parameters (coefficients and variance components), standard errors of the estimates, covariance matrix of the coefficients (fixed effects), and t-values and p-values for the hypothesis testing on the coefficients, for each gene. The LMM fitting also returns the number of iterations, the first partial derivatives of the log likelihood, and the log-likelihood at the termination of the iterations for each gene.
 
-**Exploring LMM fit and the DE genes**: We check if the LMM fitting is convergent, and perform hypothesis testing on the variance components of random effects. Then we identify the DE genes based on hypothesis testing p-values for the coefficients (fixed effects). If the absolute first partial derivatives of log likelihood are all less than the convergence tolerance, the LMM fitting converges, otherwise it doesn't converge. The genes for which LMM fitting doesn't converge should be excluded in the subsequent analysis because the estimated coefficients for these genes are not reliable. The DE genes can be identified by adjusting p-values obtained by false discovery rate (FDR) or family-wise error rate (Bonferroni correction). We may also exclude the genes with small coefficients (effect size or log-fold-change). 
+**Exploring LMM fit and DE genes**: We check if the LMM fitting is convergent, and perform hypothesis testing on the variance components of random effects. Then we identify DE genes based on hypothesis testing p-values for the coefficients (fixed effects). If the absolute first partial derivatives of log likelihood are all less than the convergence tolerance, the LMM fitting converges, otherwise it doesn't converge. The genes for which LMM fitting doesn't converge should be excluded in the subsequent analysis because the estimated coefficients for these genes are not reliable. DE genes can be identified by adjusting p-values using the false discovery rate (FDR) or family-wise error rate (Bonferroni correction). Additionally, we may exclude genes with small coefficients (effect size or log-fold change).
 
 
 ### LMM design
@@ -191,6 +217,7 @@ Z <- model.matrix(~ 0 + as.factor(sam), data = dat$meta)
 ##Dimension of random effects
 d <- ncol(Z)
 
+rm(dat)
 ```
 
 ### LMM fitting
@@ -211,7 +238,7 @@ ZY <- t(Y%*%Z)
 ZZ <- t(Z)%*%Z
 Ynorm <- rowSums(Y*Y)
 
-rm(X, Y, Z) #release the memory.
+#rm(X, Y, Z) #release the memory.
 
 ##(2) Fit LMM.
 fitss <- lmm(XX, XY, ZX, ZY, ZZ, Ynorm = Ynorm, n = n, d = d, 
@@ -230,12 +257,9 @@ test <- lmmtest(fit)
 #head(test)
 
 ##The testing t-value and p-values are also provided in the LMM fit.
-fit$coef[, 1:4]
-
-##
-#fit$t[, 1:4]
-#fit$p[, 1:4]
 range(test - cbind(t(fit$coef), t(fit$t), t(fit$p))) #identical
+fit$t[, 1:4]
+#fit$p[, 1:4]
 ```
 
 The coefficients of the interaction term cls$\ast$:trtB represent the effects of the treatment B versus A in a cell-type (cls$\ast$). We can make a comparison of the treatment B versus A within all cell-types by constructing a contrast by summing the treatment effects across cell-types as follows.
@@ -253,7 +277,7 @@ head(test)
 The contrast can also be constructed by contrast.matrix function as follows.
 ```{r}
 BvsA <- paste0(paste0("cls", 1:10, ":trtB"), collapse = "+")
-contrast <- contrast.matrix(c(BvsA = BvsA), model.matrix.names = rownames(fit$coef))
+contrast <- contrast.matrix(contrast = c(BvsA = BvsA), model.matrix.names = rownames(fit$coef))
 test <- lmmtest(fit, contrast = contrast)
 head(test)
 ```
@@ -286,14 +310,44 @@ out <- data.frame(
 ##Adjust p-values by FDR.
 out$FDR <- p.adjust(out$p, method = "fdr")
 
-##The top DE genes
-##The DE genes with FDR < 0.05
+##The DE genes with FDR < 0.05 and abs(logFC) > 0.5
 out <- out[order(out$p), ]
 rownames(out) <- NULL
-out[out$FDR <= 0.05, ]
+out[(out$FDR < 0.05) & (abs(out$coef) > 0.5) , ]
 
 ##The true DE genes
-dat$DEgenes
+#dat$DEgenes
+```
+
+### Using ML method
+
+```{r LMM_ML, echo = TRUE, message = FALSE, warning = FALSE}
+##Fitting LMM by ML method
+fit <- lmmfit(Y, X, Z, d = d, method = "ML", max.iter = max.iter, epsilon = epsilon)
+
+rm(X, Y, Z)
+
+##The DE genes specific to a cell-type
+##Coefficients, t-values, and p-values
+index <- NULL
+index <- grep(":", rownames(fit$coef))
+ce <- fit$coef[index, gc]
+tv <- fit$t[index, gc]
+pv <- fit$p[index, gc]
+
+out <- NULL
+out <- data.frame(
+	gene = rep(colnames(ce), nrow(ce)), 
+	cluster = rep(rownames(ce), each = ncol(ce)),
+	coef = c(t(ce)), t = c(t(tv)), p = c(t(pv)))
+
+##Adjusting p-values by FDR
+out$FDR <- p.adjust(out$p, method = "fdr")
+
+##The DE genes with FDR < 0.05 and abs(logFC) > 0.5
+out <- out[order(out$p), ]
+rownames(out) <- NULL
+out[(out$FDR < 0.05) & (abs(out$coef) > 0.5) , ]
 
 ##
 sessionInfo()
@@ -302,7 +356,9 @@ sessionInfo()
 
 # Remarks
   
-Building design matrices for fixed and random effects is a key step for LMM-based DE analysis. Including library size, a normalization factor for scRNA-seq, as a fixed effect can help reduce p-value inflation. If needed, we can add principal components (PCs) as fixed effects to further remove the unknown batch effect.
+Building design matrices for fixed and random effects is a key step in LMM-based differential expression analysis. Including library size, a normalization factor for scRNA-seq, as a fixed effect can help reduce p-value inflation. If necessary, we can add principal components as fixed effects to further mitigate unknown batch effects.
+
+In differential expression analysis, modeling samples (subjects) as random effects accounts for between-sample variability and within-sample correlation. If samples have different effects on gene expression, we can also model them as fixed effects. However, this can lead to overfitting when the number of samples (subjects) is large. For scRNA-seq data, this may also result in collinearity when the samples are nested within an experimental condition.
 
 
 # References
