@@ -7,13 +7,13 @@
 <!-- badges: end -->
 
 FLASH-MM is a method (package name: FLASHMM) for analysis of single-cell
-differential expression (DE) using a linear mixed- effects model (LMM).
-The mixed-effects model has become a powerful tool in single-cell
-studies due to their ability to model intra-subject correlation and
-inter-subject variability.
+differential expression using a linear mixed- effects model (LMM). The
+mixed-effects model is a powerful tool in single-cell studies due to
+their ability to model intra-subject correlation and inter-subject
+variability.
 
 FLASHMM package provides two functions, lmm and lmmfit, for fitting LMM.
-The lmm function uses summary-level statistics as arguments. The lmmfit
+The lmm function uses summary statistics as arguments. The lmmfit
 function is a wrapper function of lmm, which directly uses cell-level
 data and computes the summary statistics inside the function. The lmmfit
 function is simple to be operated but it has a limitation of memory use.
@@ -33,10 +33,16 @@ In summary, FLASHMM package provides the following functions.
 
 ## Installation
 
-You can install the development version of FLASHMM from Github:
+You can install FLASHMM package from CRAN:
 
 ``` r
-devtools::install_github("https://github.com/Baderlab/FLASHMM", build_vignettes = TRUE)
+install.packages("FLASHMM")
+```
+
+Or the development version from GitHub:
+
+``` r
+devtools::install_github("https://github.com/Baderlab/FLASHMM")
 ```
 
 ## Example
@@ -75,7 +81,7 @@ head(metadata)
 rm(dat)
 ```
 
-### DE analysis using LMM
+### Differential expression analysis using LMM
 
 **1. Model design**
 
@@ -121,7 +127,7 @@ identical(fit, fitss)
 test <- lmmtest(fit)
 #head(test)
 
-##The testing t-value and p-values are also provided in the LMM fit.
+##Note that the testing t-value and p-values are also provided in the LMM fit.
 range(test - cbind(t(fit$coef), t(fit$t), t(fit$p)))
 #> [1] 0 0
 #fit$coef[, 1:4]
@@ -145,17 +151,53 @@ fit$p[, 1:4]
 ##using the contrast constructed as follows:
 ct <- numeric(ncol(X))
 index <- grep("B", colnames(X))
-ct[index] <- 1
+ct[index] <- 1/sum(index)
 
 test <- lmmtest(fit, contrast = ct)
 head(test)
-#>             _coef         _t        _p
-#> Gene1  0.37781746  1.4753256 0.1404426
-#> Gene2  0.41332455  1.4540794 0.1462409
-#> Gene3 -0.08471487 -0.2900354 0.7718498
-#> Gene4  0.41125261  0.9531558 0.3407436
-#> Gene5 -0.48424244 -1.3918602 0.1642770
-#> Gene6  0.27026233  1.1553425 0.2482287
+#>              _coef         _t        _p
+#> Gene1  0.012593915  1.4753256 0.1404426
+#> Gene2  0.013777485  1.4540794 0.1462409
+#> Gene3 -0.002823829 -0.2900354 0.7718498
+#> Gene4  0.013708420  0.9531558 0.3407436
+#> Gene5 -0.016141415 -1.3918602 0.1642770
+#> Gene6  0.009008744  1.1553425 0.2482287
+
+sessionInfo()
+#> R version 4.4.3 (2025-02-28)
+#> Platform: x86_64-apple-darwin20
+#> Running under: macOS Monterey 12.7.6
+#> 
+#> Matrix products: default
+#> BLAS:   /Library/Frameworks/R.framework/Versions/4.4-x86_64/Resources/lib/libRblas.0.dylib 
+#> LAPACK: /Library/Frameworks/R.framework/Versions/4.4-x86_64/Resources/lib/libRlapack.dylib;  LAPACK version 3.12.0
+#> 
+#> locale:
+#> [1] en_US.UTF-8/en_US.UTF-8/en_US.UTF-8/C/en_US.UTF-8/en_US.UTF-8
+#> 
+#> time zone: America/Toronto
+#> tzcode source: internal
+#> 
+#> attached base packages:
+#> [1] stats     graphics  grDevices utils     datasets  methods   base     
+#> 
+#> other attached packages:
+#> [1] FLASHMM_1.2.0
+#> 
+#> loaded via a namespace (and not attached):
+#>  [1] Matrix_1.7-3       miniUI_0.1.1.1     compiler_4.4.3     promises_1.3.2    
+#>  [5] Rcpp_1.0.14        callr_3.7.6        later_1.4.1        yaml_2.3.10       
+#>  [9] fastmap_1.2.0      lattice_0.22-6     mime_0.13          R6_2.6.1          
+#> [13] curl_6.2.1         knitr_1.50         MASS_7.3-65        htmlwidgets_1.6.4 
+#> [17] desc_1.4.3         profvis_0.4.0      shiny_1.10.0       rlang_1.1.5       
+#> [21] cachem_1.1.0       httpuv_1.6.15      xfun_0.51          fs_1.6.5          
+#> [25] pkgload_1.4.0      memoise_2.0.1      cli_3.6.4          magrittr_2.0.3    
+#> [29] ps_1.9.0           grid_4.4.3         processx_3.8.6     digest_0.6.37     
+#> [33] rstudioapi_0.17.1  xtable_1.8-4       remotes_2.5.0      devtools_2.4.5    
+#> [37] lifecycle_1.0.4    vctrs_0.6.5        evaluate_1.0.3     glue_1.8.0        
+#> [41] urlchecker_1.0.1   sessioninfo_1.2.3  pkgbuild_1.4.6     rmarkdown_2.29    
+#> [45] purrr_1.0.4        tools_4.4.3        usethis_3.1.0.9000 ellipsis_0.3.2    
+#> [49] htmltools_0.5.8.1
 ```
 
 # Citation

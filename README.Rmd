@@ -18,9 +18,9 @@ knitr::opts_chunk$set(
 <!-- badges: start -->
 <!-- badges: end -->
 
-FLASH-MM is a method (package name: FLASHMM) for analysis of single-cell differential expression (DE) using a linear mixed- effects model (LMM). The mixed-effects model has become a powerful tool in single-cell studies due to their ability to model intra-subject correlation and inter-subject variability.
+FLASH-MM is a method (package name: FLASHMM) for analysis of single-cell differential expression using a linear mixed- effects model (LMM). The mixed-effects model is a powerful tool in single-cell studies due to their ability to model intra-subject correlation and inter-subject variability.
 
-FLASHMM package provides two functions, lmm and lmmfit, for fitting LMM. The lmm function uses summary-level statistics as arguments. The lmmfit function is a wrapper function of lmm, which directly uses cell-level data and computes the summary statistics inside the function. The lmmfit function is simple to be operated but it has a limitation of memory use. For large scale data, it is recommended to precompute and store the summary statistics and then use lmm function to fit LMM.
+FLASHMM package provides two functions, lmm and lmmfit, for fitting LMM. The lmm function uses summary statistics as arguments. The lmmfit function is a wrapper function of lmm, which directly uses cell-level data and computes the summary statistics inside the function. The lmmfit function is simple to be operated but it has a limitation of memory use. For large scale data, it is recommended to precompute and store the summary statistics and then use lmm function to fit LMM.
 
 In summary, FLASHMM package provides the following functions.
 
@@ -32,10 +32,16 @@ In summary, FLASHMM package provides the following functions.
 
 ## Installation
 
-You can install the development version of FLASHMM from Github: 
+You can install FLASHMM package from CRAN:
 
 ```{r echo = TRUE, results = "hide", message = FALSE}
-devtools::install_github("https://github.com/Baderlab/FLASHMM", build_vignettes = TRUE)
+install.packages("FLASHMM")
+```
+
+Or the development version from GitHub:
+
+```{r echo = TRUE, results = "hide", message = FALSE}
+devtools::install_github("https://github.com/Baderlab/FLASHMM")
 ```
 
 ## Example
@@ -62,7 +68,7 @@ head(metadata)
 rm(dat)
 ```
 
-### DE analysis using LMM
+### Differential expression analysis using LMM
 
 **1. Model design**
 
@@ -107,7 +113,7 @@ identical(fit, fitss)
 test <- lmmtest(fit)
 #head(test)
 
-##The testing t-value and p-values are also provided in the LMM fit.
+##Note that the testing t-value and p-values are also provided in the LMM fit.
 range(test - cbind(t(fit$coef), t(fit$t), t(fit$p)))
 #fit$coef[, 1:4]
 #fit$t[, 1:4]
@@ -120,10 +126,12 @@ fit$p[, 1:4]
 ##using the contrast constructed as follows:
 ct <- numeric(ncol(X))
 index <- grep("B", colnames(X))
-ct[index] <- 1
+ct[index] <- 1/sum(index)
 
 test <- lmmtest(fit, contrast = ct)
 head(test)
+
+sessionInfo()
 ```
 
 # Citation
