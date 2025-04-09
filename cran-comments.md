@@ -2,4 +2,4 @@
 
 0 errors | 0 warnings | 0 notes
 
-* Increment version number to 1.2.0
+* Increment version number to 1.2.1
