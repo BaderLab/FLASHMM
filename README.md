@@ -151,17 +151,17 @@ fit$p[, 1:4]
 ##using the contrast constructed as follows:
 ct <- numeric(ncol(X))
 index <- grep("B", colnames(X))
-ct[index] <- 1/sum(index)
+ct[index] <- 1/length(index)
 
 test <- lmmtest(fit, contrast = ct)
 head(test)
-#>              _coef         _t        _p
-#> Gene1  0.012593915  1.4753256 0.1404426
-#> Gene2  0.013777485  1.4540794 0.1462409
-#> Gene3 -0.002823829 -0.2900354 0.7718498
-#> Gene4  0.013708420  0.9531558 0.3407436
-#> Gene5 -0.016141415 -1.3918602 0.1642770
-#> Gene6  0.009008744  1.1553425 0.2482287
+#>             _coef         _t        _p
+#> Gene1  0.09445436  1.4753256 0.1404426
+#> Gene2  0.10333114  1.4540794 0.1462409
+#> Gene3 -0.02117872 -0.2900354 0.7718498
+#> Gene4  0.10281315  0.9531558 0.3407436
+#> Gene5 -0.12106061 -1.3918602 0.1642770
+#> Gene6  0.06756558  1.1553425 0.2482287
 
 sessionInfo()
 #> R version 4.4.3 (2025-02-28)

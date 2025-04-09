@@ -126,7 +126,7 @@ fit$p[, 1:4]
 ##using the contrast constructed as follows:
 ct <- numeric(ncol(X))
 index <- grep("B", colnames(X))
-ct[index] <- 1/sum(index)
+ct[index] <- 1/length(index)
 
 test <- lmmtest(fit, contrast = ct)
 head(test)
