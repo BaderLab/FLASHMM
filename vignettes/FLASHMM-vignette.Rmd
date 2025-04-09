@@ -53,7 +53,7 @@ $$b_k \sim N(\mathbf{0}, \sigma^2_k I_{q_k})\quad\text{and}\quad\epsilon \sim N(
 
 Here $\mathbf{0}$ is a vector or matrix of zero elements, $I_n$ is an $n\times n$ identity matrix, and $\sigma^2_k$ and $\sigma^2$ are unknown parameters, called variance components. 
 
-@HartleyRao1967 developed the maximum likelihood (ML) method for estimating the LMM parameters (fixed effects and variance components). @PattersonThompson1971 proposed a modified maximum likelihood procedure which partitions the data into two mutually uncorrelated parts, one being free of the fixed effects used for estimating variance components, called restricted maximum likelihood (REML) method. The REML estimator is unbiased. The ML estimator of variance components is biased in general. Both methods are asymptotically identical for estimating variance components. With variance components, $\theta$, estimated, the fixed effects estimated by either ML or REML are given as follows
+@HartleyRao1967 developed the maximum likelihood (ML) method for estimating the LMM parameters (fixed effects and variance components). @PattersonThompson1971 proposed a modified maximum likelihood procedure which partitions the data into two mutually uncorrelated parts, one being free of the fixed effects used for estimating variance components, called restricted maximum likelihood (REML) method. The REML estimator is unbiased. The ML estimator of variance components is biased in general. With variance components, $\theta$, estimated, the fixed effects estimated by either ML or REML are given as follows
 $$
 \hat\beta = (X^TV_{\theta}^{-1}X )^{-1}X^TV_{\theta}^{-1}y,
 $$
@@ -126,7 +126,7 @@ In summary, FLASHMM package provides the following main functions.
 ##Install FLASHMM from CRAN.
 # install.packages("FLASHMM")
 ##Install FLASHMM from Github.
-devtools::install_github("https://github.com/Baderlab/FLASHMM")
+# devtools::install_github("https://github.com/Baderlab/FLASHMM")
 
 ##Load the package.
 library(FLASHMM)
@@ -141,14 +141,14 @@ We use a simulated multi-sample multi-cell-type single-cell RNA-seq (scRNA-seq) 
 
 ## Simulating the scRNA-seq data
 
-We simulate the multi-sample multi-cell-type scRNA-seq data by simuRNAseq function in FLASHMM package. The simuRNAseq function can generate the scRNA-seq data, with or without a reference dataset. The reference dataset contains count data and metadata. The count data is a genes-by-cells matrix. The metadata must be a data frame containing three columns: samples (subjects), cell-types (clusters), and treatments (experimental conditions), and the three columns must be named ‘sam’, ‘cls’, and ‘trt’, respectively.
+We simulate the multi-sample multi-cell-type scRNA-seq data by simuRNAseq function in FLASHMM package. The simuRNAseq function can generate scRNA-seq data, with or without a reference dataset. The reference dataset contains count data and metadata. The count data is a genes-by-cells matrix. The metadata must be a data frame containing three columns: samples (subjects), cell-types (clusters), and treatments (experimental conditions), and the three columns must be named ‘sam’, ‘cls’, and ‘trt’, respectively.
 
 For simplicity and demonstration purposes, we use a simulated reference dataset to generate the scRNA-seq data. First we simulate the reference dataset.
 
 ```{r Reference dataset, echo = TRUE, message = FALSE}
 ##Generate a reference dataset by simuRNAseq function.
 set.seed(2502)
-refdata <- simuRNAseq(nGenes = 2000, nCells = 10000)
+refdata <- simuRNAseq(nGenes = 1000, nCells = 10000)
 
 ##counts
 counts <- refdata$counts
@@ -191,7 +191,7 @@ $$
 
 **LMM fitting and hypothesis testing**: We use either lmm or lmmfit function to fit LMMs for all genes. With the cell-level data matrices $Y$, $X$ and $Z$, the LMMs can be fit by
 $$lmmfit(Y, X, Z, d = d),$$
-where $d$ is the number of random-effects. For $K$ components of random-effects, $d = (q_1, \ldots, q_K)$, where $q_k$ is the number of columns of the design matrix $Z_k$ for the $k$-th random-effect component. For a large-scale data, the lmmfit function has a problem of computer memory limit. In this case, it is recommended to pre-compute and store the summary-level data: $XX$, $XY$, $ZX$, $ZY$, $ZZ$, and $Y_{norm}$, defined in \eqref{eq:sdata}, and then use the lmm function to fit the LMMs as follows:
+where $d$ is a vector of the numbers of random-effects in different components. For $K$ components of random-effects, $d = (q_1, \ldots, q_K)$, where $q_k$ is the number of columns of the design matrix $Z_k$ for the $k$-th random-effect component. For a large-scale data, the lmmfit function has a problem of computer memory limit. In this case, it is recommended to pre-compute and store the summary-level data: $XX$, $XY$, $ZX$, $ZY$, $ZZ$, and $Y_{norm}$, defined in \eqref{eq:sdata}, and then use the lmm function to fit the LMMs as follows:
 $$lmm(XX, XY, ZX, ZY, ZZ, Ynorm = Ynorm, n = n, d = d).$$
 The summary-level data doesn't depend on the sample size $n$. This makes lmm memory-efficient. The default method in the lmm and lmmfit functions is restricted maximum likelihood (REML), that is, method = 'REML'. If you use the maximum likelihood (ML) method to fit the LMM, set method = 'ML' in the lmm and lmmfit functions.
 
@@ -238,7 +238,7 @@ ZY <- t(Y%*%Z)
 ZZ <- t(Z)%*%Z
 Ynorm <- rowSums(Y*Y)
 
-#rm(X, Y, Z) #release the memory.
+rm(X, Y, Z) #release the memory.
 
 ##(2) Fit LMM.
 fitss <- lmm(XX, XY, ZX, ZY, ZZ, Ynorm = Ynorm, n = n, d = d, 
@@ -258,15 +258,16 @@ test <- lmmtest(fit)
 
 ##The testing t-value and p-values are also provided in the LMM fit.
 range(test - cbind(t(fit$coef), t(fit$t), t(fit$p))) #identical
-fit$t[, 1:4]
+#fit$t[, 1:4]
 #fit$p[, 1:4]
+fit$coef[, 1:4]
 ```
 
 The coefficients of the interaction term cls$\ast$:trtB represent the effects of the treatment B versus A in a cell-type (cls$\ast$). We can make a comparison of the treatment B versus A within all cell-types by constructing a contrast by summing the treatment effects across cell-types as follows.
 ```{r}
 contrast <- cbind("BvsA" = numeric(nrow(fit$coef)))
 index <- grep(":", rownames(fit$coef))
-contrast[index, ] <- 1
+contrast[index, ] <- 1/length(index)
 
 ##Test the contrast.
 test <- lmmtest(fit, contrast = contrast)
@@ -277,6 +278,8 @@ head(test)
 The contrast can also be constructed by contrast.matrix function as follows.
 ```{r}
 BvsA <- paste0(paste0("cls", 1:10, ":trtB"), collapse = "+")
+BvsA <- paste0("(", BvsA, ")/10")
+BvsA
 contrast <- contrast.matrix(contrast = c(BvsA = BvsA), model.matrix.names = rownames(fit$coef))
 test <- lmmtest(fit, contrast = contrast)
 head(test)
@@ -323,9 +326,9 @@ out[(out$FDR < 0.05) & (abs(out$coef) > 0.5) , ]
 
 ```{r LMM_ML, echo = TRUE, message = FALSE, warning = FALSE}
 ##Fitting LMM by ML method
-fit <- lmmfit(Y, X, Z, d = d, method = "ML", max.iter = max.iter, epsilon = epsilon)
-
-rm(X, Y, Z)
+#fit <- lmmfit(Y, X, Z, d = d, method = "ML", max.iter = max.iter, epsilon = epsilon)
+fit <- lmm(XX, XY, ZX, ZY, ZZ, Ynorm = Ynorm, n = n, d = d, method = "ML",
+             max.iter = max.iter, epsilon = epsilon)
 
 ##The DE genes specific to a cell-type
 ##Coefficients, t-values, and p-values
