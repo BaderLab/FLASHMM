@@ -182,7 +182,7 @@ sessionInfo()
 #> [1] stats     graphics  grDevices utils     datasets  methods   base     
 #> 
 #> other attached packages:
-#> [1] FLASHMM_1.2.0
+#> [1] FLASHMM_1.2.1
 #> 
 #> loaded via a namespace (and not attached):
 #>  [1] Matrix_1.7-3       miniUI_0.1.1.1     compiler_4.4.3     promises_1.3.2    
@@ -204,5 +204,7 @@ sessionInfo()
 
 If you find FLASH-MM useful for your publication, please cite:
 
-Xu & Pouyabahar et al., FLASH-MM: Fast and Scalable Single-Cell
-Differential Expression Analysis Using Linear Mixed-Effects Models.
+Xu & Pouyabahar et al., FLASH-MM: fast and scalable single-cell
+differential expression analysis using linear mixed-effects models,
+bioRxiv 2025.04.08.647860; doi:
+<https://doi.org/10.1101/2025.04.08.647860>
