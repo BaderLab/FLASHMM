@@ -1,8 +1,8 @@
 #' Testing Fixed Effects and Contrasts of the Fixed Effects
 #'
-#' @description lmmtest is used to test fixed effects or contrasts of fixed effects.
+#' @description lmmtest is used to test fixed effects or contrasts of fixed effects by t-statistic.
 
-#' @param fit A result of lmmfit/lmm, which contains
+#' @param fit Output of \code{\link{lmmfit}} or \code{\link{lmm}}, which contains
 #' coef (estimates of fixed effects), a matrix with rows representing the fixed effects and columns the different response variables in the model,
 #' cov (covariance matrix of the fixed effects), an array of three dimensions for different response variables in the model,
 #' df (residual degree of freedom in the linear model).
@@ -10,7 +10,7 @@
 #' @param contrast A matrix with columns corresponding to contrasts of the fixed effects to be tested.
 #' @param alternative A character string specifying the alternative hypothesis, one of "two.sided", "greater" or "less".
 #'
-#' @return A matrix of coefficients, t-values and p-values, in which the rows correspond to the features (genes) and the columns the fixed effects (covariates). .
+#' @return A matrix of coefficients, t-values and p-values, in which the rows correspond to the features and the columns the fixed effects (covariates). .
 #'
 #' @importFrom stats pt
 #'

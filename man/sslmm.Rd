@@ -4,7 +4,7 @@
 \alias{sslmm}
 \title{Computing Summary-level Data from Individual-level Data}
 \usage{
-sslmm(X, Y, Z)
+sslmm(X, Y, Z, nBlocks = ceiling((ncol(Y) * 1e-08) * nrow(Y)))
 }
 \arguments{
 \item{X}{A design matrix for fixed effects, with rows corresponding to the columns of Y.}
@@ -12,18 +12,24 @@ sslmm(X, Y, Z)
 \item{Y}{A features-by-samples matrix of responses (genes-by-cells matrix of gene expressions for scRNA-seq).}
 
 \item{Z}{A design matrix for random effects, with rows corresponding to the columns of Y.}
+
+\item{nBlocks}{Number of the blocks, which a big data is subdivided into, used for reducing the storage in computing the summary statistics that are computed from a block of data. The default value may not be adequate. If encountering the error: vector memory limit reached, you should increase the nBlocks value to avoid the issue.}
 }
 \value{
 A list of summary statistics:
-XX = t(X)\%*\%X,
-XY = t(X)\%*\%t(Y),
-ZX = t(Z)\%*\%X,
-ZY = t(Z)\%*\%t(Y),
-ZZ = t(Z)\%*\%Z,
-Ynorm = rowSums(Y*Y) and n = nrow(X).
+XX, XY, ZX, ZY, ZZ, Ynorm and n.
 }
 \description{
-sslmm can be used to compute the correlation-related summary statistics (summary-level data) for lmm function.
+sslmm can be used to compute the summary statistics (summary-level data) for \code{\link{lmm}} function, defined as
+\itemize{
+\item XX = t(X)\%*\%X
+\item XY = t(X)\%*\%t(Y)
+\item ZX = t(Z)\%*\%X
+\item ZY = t(Z)\%*\%t(Y)
+\item ZZ = t(Z)\%*\%Z
+\item Ynorm = rowSums(Y*Y)
+\item n = nrow(X)
+}
 }
 \examples{
 n <- 1e3
@@ -38,5 +44,12 @@ q <- 4
 Z <- gl(q, n/q, labels = letters[1:q])
 Z <- model.matrix(~ 0 + Z)
 sslmm(X, Y, Z)
+
+s1 <- sslmm(X, Y, Z, nBlocks = 1)
+s2 <- sslmm(X, Y, Z, nBlocks = 2)
+s3 <- sslmm(X, Y, Z, nBlocks = 3)
+
+identical(s1, s2)
+identical(s2, s3)
 
 }

@@ -60,31 +60,41 @@ simuRNAseq(
 \item{var.randomeffects}{Variance of random effects}
 }
 \value{
-ref.mean.dispersion: A data frame of the reference counts' means and dispersion,
-
-metadata: Meta data consisting of 4 columns: sam (sample labels), cls (cluster lables of cell types), trt (two treatments/conditions) and libsize (library sizes).
-
-counts: A genes-by-cells matrix of the simulated counts.
-
-DEgenes: A data frame of DE genes consisting of 3 columns: gene, beta (effect), and cluster to which the gene is specific.
-
-treatment: The condition treated.
+A list containing the following components:
+   \item{ref.mean.dispersion}{A data frame of the reference counts' means and dispersion.}
+   \item{metadata}{Meta data consisting of 4 columns: sam (sample labels), cls (cluster lables of cell types), trt (two treatments/conditions) and libsize (library sizes).}
+   \item{counts}{A genes-by-cells matrix of the simulated counts.}
+   \item{DEgenes}{A data frame of DE genes consisting of 3 columns: gene, beta (effect), and cluster to which the gene is specific.}
+   \item{treatment}{The condition treated.}
 }
 \description{
 simuRNAseq simulates scRNA-seq data with multiple subjects (samples), multiple clusters (cell-types) and two treatments (conditions) based on a negative binomial (NB) distribution using a reference data as background or control.
-The reference data consisting of genes-by-cells counts matrix is used to estimate the NB dispersion and means for the genes to be simulated. The simulated genes are randomly selected from the reference data.
+The reference data consisting of genes-by-cells counts matrix is used to estimate the NB dispersion and means for the genes to be simulated.
+
+The simulated genes are randomly selected from the reference data.
+If the number of simulated genes is equal to the number of genes in the reference data, the original gene names in the reference data are retained.
 The NB dispersion are estimated by the method-of-moments estimate (MME).
 The NB means for the background in the control are estimated by the sample mean. The NB means for the differentially expressed (DE) genes are given by the sample mean plus a log-fold change (logFC).
+
 The simulated cells are randomly selected from the meta data that specifies subjects, cell-types and treatments for the cells.
 The meta data consists of samples, clusters of cell types, and treatments, which can be generated either from reference data or randomly. If not provided, it will be randomly generated.
+
 A random seed is recommended to be specified by set.seed before simulating data.
 }
 \examples{
 #Simulate a multi-sample multi-cell-type scRNA-seq dataset.
 set.seed(2412)
-dat <- simuRNAseq(nGenes = 50, nCells = 1000, nsam = 25, ncls = 4, ntrt = 2, nDEgenes = 6)
+refdata <- simuRNAseq(nGenes = 50, nCells = 1000, nsam = 25, ncls = 4, ntrt = 2, nDEgenes = 6)
+str(refdata)
+#The samples are nested in a condition.
+table(refdata$metadata[, c("sam", "trt")])
+
+#Simulate a multi-sample multi-cell-type scRNA-seq dataset with reference data.
+dat <- simuRNAseq(refdata$counts)
 str(dat)
-table(dat$metadata[, c("sam", "trt")]) #The samples are nested in a condition.
+
+all(rownames(dat$counts) == rownames(refdata$counts))
+all(colnames(dat$counts) == colnames(refdata$counts))
 
 #Analyze differentially expressed (DE) genes specific to a cell-type using LMM.
 Y <- log(dat$counts + 1) #expressions (log-transformed counts)
@@ -105,6 +115,7 @@ ZY <- t(Y\%*\%Z)
 ZZ <- t(Z)\%*\%Z
 Ynorm <- rowSums(Y*Y)
 fitss <- lmm(XX, XY, ZX, ZY, ZZ, Ynorm = Ynorm, n = n, d = d)
+
 identical(fit, fitss)
 
 #Hypothesis testing
@@ -113,7 +124,5 @@ head(test)
 
 #The DE genes specific to a cell-type.
 tail(test[, grep(":", colnames(test))])
-#The true DE genes
-dat$DEgenes
 
 }

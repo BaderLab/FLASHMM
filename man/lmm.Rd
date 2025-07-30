@@ -22,21 +22,21 @@ lmm(
 )
 }
 \arguments{
-\item{XX}{t(X)\%*\%X, X is a design matrix for fixed effects.}
+\item{XX}{= t(X)\%*\%X, where X is a design matrix for fixed effects.}
 
-\item{XY}{t(Y\%*\%X), Y is a features-by-samples matrix of observed responses (genes-by-cells expression matrix for scRNA-seq).}
+\item{XY}{= t(Y\%*\%X), where Y is a features-by-samples matrix of observed responses (genes-by-cells expression matrix for scRNA-seq).}
 
-\item{ZX}{t(Z)\%*\%X, Z = [Z1, ..., Zk],  a design matrix for k random factors (variables).}
+\item{ZX}{= t(Z)\%*\%X, where Z = [Z1, ..., Zk], a design matrix for k random factors (variables or random components).}
 
-\item{ZY}{t(Y\%*\%Z).}
+\item{ZY}{= t(Y\%*\%Z).}
 
-\item{ZZ}{t(Z)\%*\%Z.}
+\item{ZZ}{= t(Z)\%*\%Z.}
 
-\item{Ynorm}{Norms for features (each row in Y), that is, Ynorm = rowSums(Y*Y).}
+\item{Ynorm}{= rowSums(Y*Y), norms for features (each row in Y).}
 
-\item{n}{Numbers of samples (cells in scRNA-seq), nrow(X).}
+\item{n}{= nrow(X), number of samples (cells in scRNA-seq).}
 
-\item{d}{A vector of (m1,...,mk), mi = ncol(Zi), number of columns in Zi. m1 + ... + mk = ncol(Z), number of columns in Z.}
+\item{d}{= (d1,...,dk), where di = ncol(Zi), number of columns in Zi. sum(d) = ncol(Z), number of columns in Z. For the model with only one random factor, d = ncol(Z).}
 
 \item{theta0}{A vector of initial values of the variance components, (s1, ...,sk, s_(k+1)), si = sigma_i^2, the variance component of the i-th type random effects. s_(k+1) = sigma^2, the variance component of model residual error.}
 
@@ -52,33 +52,21 @@ lmm(
 }
 \value{
 A list containing the following components:
-
-dlogL First partial derivatives of log-likelihoods for each feature (gene).
-
-logLik Either log maximum likelihood (ML) or log restricted maximum likelihood (REML) for each feature (gene). The log restricted maximum likelihood may have a constant difference from other computations. The constant difference is related to the fixed design matrix, X.
-
-niter Nmbers of iterations for each feature (gene).
-
-coef A matrix of estimated coefficients (fixed effects), each column corresponds to a feature (gene) and each row one covariate.
-
-se A matrix of the standard errors of the estimated coefficients.
-
-t A matrix of t-values for the fixed effects, equal to coef/se.
-
-df Degrees of freedom.
-
-p A matrix of two-sided p-values for the fixed effects.
-
-cov A array of covariance matrices of the estimated coefficients (fixed effects).
-
-theta A matrix of the estimated variance components, each column corresponds to a feature (gene) and each row one variance component. The last row is the variance component of the residual error.
-
-se.theta Standard errors of the estimated theta.
-
-RE A matrix of the best linear unbiased prediction (BLUP) of random effects.
+   \item{dlogL}{First partial derivatives of log-likelihoods for each feature.}
+   \item{logLik}{Maximum log-likelihoods for ML method or log-restricted-likelihood for REML method.}
+   \item{niter}{Numbers of iterations for each feature.}
+   \item{coef}{A matrix of estimated coefficients (fixed effects), each column corresponds to a feature and each row one covariate.}
+   \item{se}{A matrix of standard errors of the estimated coefficients.}
+   \item{t}{A matrix of t-values for the fixed effects, equal to coef/se.}
+   \item{df}{Degrees of freedom for the t-statistics (values).}
+   \item{p}{A matrix of two-sided p-values for the t-tests of the fixed effects.}
+   \item{cov}{A array of covariance matrices of the estimated coefficients (fixed effects).}
+   \item{theta}{A matrix of the estimated variance components, each column corresponds to a feature and each row one variance component. The last row is the variance component of the residual error.}
+   \item{se.theta}{Standard errors of the estimated theta.}
+   \item{RE}{A matrix of the best linear unbiased prediction (BLUP) of random effects.}
 }
 \description{
-lmm is used to fit linear mixed-effects models (LMM) based on summary-level data. The LMM parameters are estimated by restricted maximum likelihood (REML) with Fisher scoring (FS) gradient descent algorithm.
+lmm is used to fit linear mixed-effects models (LMM) based on summary-level data. The LMM parameters are estimated by either restricted maximum likelihood (REML) or maximum likelihood (ML) method with Fisher scoring (FS) gradient descent algorithm.
 }
 \examples{
 #Generate data: X, Y, and Z.
