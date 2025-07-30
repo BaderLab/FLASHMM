@@ -19,7 +19,7 @@
 #'
 #' @return A list containing the following components:
 #'    \item{dlogL}{First partial derivatives of log-likelihoods for each feature.}
-#'    \item{logLik}{Maximum log-likelihoods for ML method or log-restricted-likelihood for REML method.}
+#'    \item{logLik}{Maximum log-likelihoods for ML method or maximum log-restricted-likelihood for REML method.}
 #'    \item{niter}{Numbers of iterations for each feature.}
 #'    \item{coef}{A matrix of estimated coefficients (fixed effects), each column corresponds to a feature and each row one covariate.}
 #'    \item{se}{A matrix of standard errors of the estimated coefficients.}
