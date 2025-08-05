@@ -196,8 +196,9 @@ with two-component random effects.
 ## Design matrix for two-component random effects, Za: Suppose the data
 ## contains the measurement time points, denoted as 'time', which are randomly
 ## generated.
-set.seed(250801)
-metadata$time <- runif(nrow(X))
+set.seed(2508)
+n <- nrow(metadata)
+metadata$time <- runif(n) + runif(n, 2, 3) * sample(0:1, n, replace = TRUE)
 Za <- model.matrix(~0 + sam + sam:time, data = metadata)
 da <- c(ncol(Za)/2, ncol(Za)/2)  #dimension
 
