@@ -141,7 +141,7 @@ head(test)
 ```
 
 
-## More examples
+## And more
 
 ### Using ML method
 

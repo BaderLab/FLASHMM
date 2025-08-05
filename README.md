@@ -174,7 +174,7 @@ head(test)
 #> Gene6  0.06756558  1.1553425 0.2482287
 ```
 
-## More examples
+## And more
 
 ### Using ML method
 
