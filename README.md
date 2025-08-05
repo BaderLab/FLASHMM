@@ -156,7 +156,7 @@ fit$p[, 1:4]
 
 # fit$coef[, 1:4] fit$t[, 1:4]
 
-## Testing contrasts We can make comparisons using contrasts. For example, the
+## Using contrasts: We can make comparisons using contrasts. For example, the
 ## effects of treatment B vs A in all clusters can be tested using the contrast
 ## constructed as follows:
 ct <- numeric(ncol(X))
