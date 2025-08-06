@@ -174,7 +174,7 @@ head(test)
 #> Gene6  0.06756558  1.1553425 0.2482287
 ```
 
-## And more
+## And More
 
 ### Using ML method
 
@@ -198,7 +198,7 @@ with two-component random effects.
 ## generated.
 set.seed(2508)
 n <- nrow(metadata)
-metadata$time <- runif(n) + runif(n, 2, 3) * sample(0:1, n, replace = TRUE)
+metadata$time <- runif(n) + runif(n, 1, 2) * sample(0:1, n, replace = TRUE)
 Za <- model.matrix(~0 + sam + sam:time, data = metadata)
 da <- c(ncol(Za)/2, ncol(Za)/2)  #dimension
 
@@ -266,18 +266,18 @@ sessionInfo()
 #> [1] FLASHMM_1.2.1
 #> 
 #> loaded via a namespace (and not attached):
-#>  [1] Matrix_1.7-3       miniUI_0.1.1.1     compiler_4.4.3     promises_1.3.2    
-#>  [5] Rcpp_1.0.14        callr_3.7.6        later_1.4.1        yaml_2.3.10       
-#>  [9] fastmap_1.2.0      lattice_0.22-6     mime_0.13          R6_2.6.1          
-#> [13] curl_6.2.1         knitr_1.50         MASS_7.3-65        htmlwidgets_1.6.4 
-#> [17] desc_1.4.3         profvis_0.4.0      shiny_1.10.0       rlang_1.1.6       
-#> [21] cachem_1.1.0       httpuv_1.6.15      xfun_0.51          fs_1.6.5          
+#>  [1] Matrix_1.7-3       miniUI_0.1.2       compiler_4.4.3     promises_1.3.3    
+#>  [5] Rcpp_1.1.0         callr_3.7.6        later_1.4.2        yaml_2.3.10       
+#>  [9] fastmap_1.2.0      lattice_0.22-7     mime_0.13          R6_2.6.1          
+#> [13] curl_6.4.0         knitr_1.50         MASS_7.3-65        htmlwidgets_1.6.4 
+#> [17] desc_1.4.3         profvis_0.4.0      shiny_1.11.1       rlang_1.1.6       
+#> [21] cachem_1.1.0       httpuv_1.6.16      xfun_0.52          fs_1.6.6          
 #> [25] pkgload_1.4.0      memoise_2.0.1      cli_3.6.5          formatR_1.14      
-#> [29] magrittr_2.0.3     ps_1.9.0           grid_4.4.3         processx_3.8.6    
+#> [29] magrittr_2.0.3     ps_1.9.1           grid_4.4.3         processx_3.8.6    
 #> [33] digest_0.6.37      rstudioapi_0.17.1  xtable_1.8-4       remotes_2.5.0     
-#> [37] devtools_2.4.5     lifecycle_1.0.4    vctrs_0.6.5        evaluate_1.0.3    
-#> [41] glue_1.8.0         urlchecker_1.0.1   sessioninfo_1.2.3  pkgbuild_1.4.6    
-#> [45] rmarkdown_2.29     purrr_1.0.4        tools_4.4.3        usethis_3.1.0.9000
+#> [37] devtools_2.4.5     lifecycle_1.0.4    vctrs_0.6.5        evaluate_1.0.4    
+#> [41] glue_1.8.0         urlchecker_1.0.1   sessioninfo_1.2.3  pkgbuild_1.4.8    
+#> [45] rmarkdown_2.29     purrr_1.1.0        tools_4.4.3        usethis_3.1.0.9000
 #> [49] ellipsis_0.3.2     htmltools_0.5.8.1
 ```
 
