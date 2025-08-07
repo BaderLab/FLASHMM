@@ -201,15 +201,12 @@ with two-component random effects.
 
 set.seed(2508)
 n <- nrow(metadata)
-metadata$time <- rnorm(n, 5) * sample(1:2, n, replace = TRUE)
+metadata$time <- sample(1:2, n, replace = TRUE)
 Z <- model.matrix(~0 + sam + sam:time, data = metadata)
 d <- c(ncol(Z)/2, ncol(Z)/2)  #dimension
 
 ## Fit the LMM with Two-component random effects.
 fit2 <- lmmfit(Y, X, Z, d = d, method = "ML")
-#> Warning in lmm(XX, XY, ZX, ZY, ZZ, Ynorm = Ynorm, n = n, d = d, theta0 =
-#> theta0, : 1 features (the rows of Y) for which fitting LMM doesn't converge
-#> with abs(dlogL) > epsilon, 1e-05
 ```
 
 ### Testing variance components
