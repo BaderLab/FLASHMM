@@ -201,7 +201,7 @@ with two-component random effects.
 
 set.seed(2508)
 n <- nrow(metadata)
-metadata$time <- rnorm(n, 6) * sample(1:2, n, replace = TRUE)
+metadata$time <- rnorm(n, 5) * sample(1:2, n, replace = TRUE)
 Z <- model.matrix(~0 + sam + sam:time, data = metadata)
 d <- c(ncol(Z)/2, ncol(Z)/2)  #dimension
 
