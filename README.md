@@ -102,7 +102,6 @@ hypothesis testing.
 ``` r
 Y <- log(counts + 1) 
 X <- model.matrix(~ 0 + log(libsize) + cls + cls:trt, data = metadata)
-##The single-component design matrix
 Z <- model.matrix(~ 0 + sam, data = metadata)
 d <- ncol(Z) 
 ```
@@ -155,10 +154,13 @@ fit$p[, 1:4]
 #> cls4:trtB    0.7442524470 9.307711e-02 0.6485383571 5.182577e-01
 
 # fit$coef[, 1:4] fit$t[, 1:4]
+```
 
-## Using contrasts: We can make comparisons using contrasts. For example, the
-## effects of treatment B vs A in all clusters can be tested using the contrast
-## constructed as follows:
+**Using contrasts**: We can make comparisons using contrasts. For
+example, the effects of treatment B vs A in all clusters can be tested
+using the contrast constructed as follows.
+
+``` r
 ct <- numeric(ncol(X))
 index <- grep("B", colnames(X))
 ct[index] <- 1/length(index)
@@ -193,17 +195,18 @@ time as a random effect within a subject, we may fit data using the LMM
 with two-component random effects.
 
 ``` r
-## Design matrix for two-component random effects, Za: Suppose the data
-## contains the measurement time points, denoted as 'time', which are randomly
+## Design matrix for two-component random effects: Suppose the data contains
+## the measurement time points, denoted as 'time', which are randomly
 ## generated.
+
 set.seed(2508)
 n <- nrow(metadata)
 metadata$time <- rnorm(n, 6) * sample(1:2, n, replace = TRUE)
-Za <- model.matrix(~0 + sam + sam:time, data = metadata)
-da <- c(ncol(Za)/2, ncol(Za)/2)  #dimension
+Z <- model.matrix(~0 + sam + sam:time, data = metadata)
+d <- c(ncol(Z)/2, ncol(Z)/2)  #dimension
 
 ## Fit the LMM with Two-component random effects.
-fit2 <- lmmfit(Y, X, Za, d = da, method = "ML")
+fit2 <- lmmfit(Y, X, Z, d = d, method = "ML")
 #> Warning in lmm(XX, XY, ZX, ZY, ZZ, Ynorm = Ynorm, n = n, d = d, theta0 =
 #> theta0, : 1 features (the rows of Y) for which fitting LMM doesn't converge
 #> with abs(dlogL) > epsilon, 1e-05
@@ -236,14 +239,14 @@ qqplot(runif(length(p)), p, xlab = "Uniform quantile", ylab = "Z-test p-value")
 abline(0, 1, col = "gray")
 ```
 
-<img src="man/figures/README-unnamed-chunk-10-1.png" width="100%" />
+<img src="man/figures/README-unnamed-chunk-11-1.png" width="100%" />
 
 ``` r
 qqplot(runif(length(pLRT)), pLRT, xlab = "Uniform quantile", ylab = "LRT p-value")
 abline(0, 1, col = "gray")
 ```
 
-<img src="man/figures/README-unnamed-chunk-10-2.png" width="100%" />
+<img src="man/figures/README-unnamed-chunk-11-2.png" width="100%" />
 
 ``` r
 sessionInfo()
