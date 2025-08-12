@@ -1,3 +1,5 @@
+# FLASHMM 1.2.2
+
 # FLASHMM 1.2.1
 
 # FLASHMM 1.2.0
