@@ -33,15 +33,15 @@ MathJax = {
 </script>
 ```
 
-# Methods
+# FLASHMM
 
-## LMM parameter estimation and hypothesis testing\label{LMMmethods}
+## Linear mixed-effects model
 
 Consider the linear mixed-effects model (LMM) as expressed below [@Searle2006]
 \begin{equation}\label{eq:lmm}
 y = X\beta + Zb + \epsilon,
 \end{equation}
-where $y$ is an $n\times 1$ vector of observed responses, $X$ is an $n\times p$ design matrix for fixed effects $\beta$, $Z$ is an $n\times q$ design matrix for random effects $b$, and $\epsilon$ is an $n\times 1$ vector of residual errors. The term of random effects may be a combination of various components,
+where $y$ is an $n\times 1$ vector of observed responses, $X$ is an $n\times p$ design matrix for fixed effects $\beta$, $Z$ is an $n\times q$ design matrix for random effects $b$, and $\epsilon$ is a vector of residual errors. The term of random effects may be a combination of various components,
 $$
 Zb = Z_1 b_1 + \cdots + Z_K b_K,
 $$
@@ -53,56 +53,12 @@ $$b_k \sim N(\mathbf{0}, \sigma^2_k I_{q_k})\quad\text{and}\quad\epsilon \sim N(
 
 Here $\mathbf{0}$ is a vector or matrix of zero elements, $I_n$ is an $n\times n$ identity matrix, and $\sigma^2_k$ and $\sigma^2$ are unknown parameters, called variance components. Assumption (1) implies $p < n$. We also assume $q_k < n$. If $q_k\geq n$, we can use principal component analysis (PCA) to obtain an equivalent LMM with the number of random effects less than $n$. 
 
-@HartleyRao1967 developed the maximum likelihood (ML) method for estimating the LMM parameters (fixed effects and variance components). @PattersonThompson1971 proposed a modified maximum likelihood procedure which partitions the data into two mutually uncorrelated parts, one being free of the fixed effects used for estimating variance components, called restricted maximum likelihood (REML) method. The REML estimator is unbiased. The ML estimator of variance components is biased in general. With variance components, $\theta$, estimated, the fixed effects estimated by either ML or REML are given as follows
-$$
-\hat\beta = (X^TV_{\theta}^{-1}X )^{-1}X^TV_{\theta}^{-1}y,
-$$
-with covariance matrix 
-$$var(\hat\beta) = (X^TV_{\theta}^{-1}X)^{-1},$$
-where $\theta = (\theta_0, \theta_1,\ldots, \theta_K)$, $\theta_0 = \sigma^2$, $\theta_k = \sigma^2_k$, and
-$$V_{\theta} = \theta_0 I_n + \theta_1 Z_1Z_1^T + \ldots + \theta_K Z_KZ_K^T.$$
 
-Estimating the variance components by either ML or REML is a numerical optimization problem. Various iterative methods based on log likelihood, called gradient methods, have been proposed [@Searle2006]. The gradient methods are represented by the iteration equation
-\begin{equation}\label{eq:gradient}
-\theta^{(i+1)} = \theta^{(i)} + \Gamma(\theta^{(i)})\frac{\partial l(\theta^{(i)})}{\partial\theta},
-\end{equation}
-where $\partial l(\theta)/\partial\theta$ is the gradient of the log likelihood function, and $\Gamma(\theta)$ is a modifier matrix of the gradient direction, which can be specified by Newton–Raphson, Fisher scoring or average information. The Newton-Raphson method uses the inverse of the negative Hessian matrix (observed Fisher information) as a modifier, while the Fisher scoring method uses the inverse of Fisher information matrix (the expectation of negative Hessian matrix). The average information method uses the inverse of the average of the negative Hessian matrix and its expectation. The Fisher scoring method is more stable than others because the negative Hessian matrix may not be positive definite but its expectation is positive definite. 
+## The fast and scalable algorithm
 
-The hypotheses for testing fixed effects and variance components can be respectively defined as
-$$
-H_{0, i}: \beta_i = 0 ~~\text{versus}~~H_{1,i}: \beta_i\ne 0,
-$$
-$$
-H_{0, k}: \theta_k \leq 0 ~~\text{versus}~~H_{1,k}: \theta_k > 0,
-$$
-where $\theta_k$, $k=1, \ldots, K$, represent the parameters of variance components $\sigma^2_k$ but are allowed to be negative. The lower boundary of the parameters, $\theta$, can be the negative value such that the variance-covariance matrix, $V_{\theta}$, remains definable (positive definite). The negative lower boundary exists and can be less than or equal to $- \sigma^2/\lambda_{max}$, where $\lambda_{max} > 0$ is the largest singular value of $ZZ^T$ or $Z^TZ$. If $\theta_k > 0$, then $\sigma_k^2 = \theta_k$ is definable and the mixed model is well-specified. Otherwise, if $\theta_k \le 0$, the mixed model is miss-specified and the $k$-th random-effect component shouldn't be included.
+@HartleyRao1967 developed the maximum likelihood (ML) method for estimating the LMM parameters (fixed effects and variance components). @PattersonThompson1971 proposed a modified maximum likelihood procedure, called restricted maximum likelihood (REML) method. Estimating the variance components by either ML or REML is a numerical optimization problem. The log-likelihood based gradient methods have been proposed [@Searle2006]. 
 
-Allowing the parameters of variance components to take negative value avoids the zero boundary at the null hypothesis for the variance components. Consequently, the asymptotic normality of the maximum likelihood estimates at the null hypothesis holds under regularity conditions, which enables us to use z-statistics or t-statistics for hypothesis testing of the fixed effects and variance components. The t-statistics for fixed effects are given by
-\begin{equation}
-\label{eq:tcoef}
-T_i = \frac{\hat\beta_i}{\sqrt{var(\hat\beta_i)}} = \frac{\hat\beta_i}{\sqrt{var(\hat\beta)_{ii}}} ~\sim ~t(n - p).
-\end{equation}
-The t-statistic for a contrast, a linear combination of the estimated fixed effects, $c^T\hat\beta$, is 
-\begin{equation}
-\label{eq:tcontrast}
-T_c = \frac{c^T\hat\beta}{\sqrt{c^Tvar(\hat\beta) c}} \sim t(n-p).
-\end{equation}
-The z-statistics for the parameters of variance components are given by
-\begin{equation}
-\label{zvarcomp}
-Z_{\theta_k} = \frac{\hat\theta_k}{\sqrt{[I(\hat\theta)^{-1}]_{kk}}} \sim N(0, 1),
-\end{equation}
-where $I(\theta)$ is the Fisher information matrix.
-
-We can also use likelihood ratio test (LRT) statistics to test the variance components. Let $\theta_{sub}$ be the sub-vector of $\theta$ that is not equal to zero. Let $L(\hat\theta_{sub})$ and $L(\hat\theta)$ be the maximum likelihood for the sub-model and the full model, respectively. Note that $L(\hat\theta_{sub})$ and $L(\hat\theta)$ depend on $\hat\beta$ for the ML method which is suppressed for simplicity of notation. The LRT statistic,
-\begin{equation}\label{lrtvarcomp}
-\lambda_{LR} = 2[\log(L(\hat\theta)) - \log(L(\hat\theta_{sub}))] \sim\chi^2_r,
-\end{equation}
-an asymptotic $\chi^2$ distribution, where $r$ is the number of zero variance components. The LRT requires that both sub and full models are fitted by the same method, either ML or REML, and the design matrix of fixed effects must be the same for both sub and full models when using REML method to fit the models.
-
-## Fast and scalable algorithm
-
-We developed a summary statistics based algorithm for implementing the gradient method \eqref{eq:gradient}. Let $XX$, $XY$, $ZX$, $ZY$, and $ZZ$ denote a matrix, respectively, which define the summary statistics that are computed from cell-level data $X$, $Y$ and $Z$ as follows: 
+We developed a fast and scalable algorithm for implementing the gradient methods based on summary statistics. Let $XX$, $XY$, $ZX$, $ZY$, and $ZZ$ denote a matrix, respectively, which define the summary statistics that are computed from cell-level data $X$, $Y$ and $Z$ as follows: 
 \begin{equation}
 \label{eq:sdata}
 \begin{array}{l}
@@ -113,7 +69,7 @@ Ynorm = [y_1y_1^T, \ldots, y_my_m^T],
 \end{equation}
 where $Y = [y_1^T, \ldots, y_m^T]^T$ is a $m$-by-$n$ matrix of gene expression profile with each row $y_i$ corresponding to the expression of gene $i$, $i=1,\ldots,m$, $m$ is the number of genes and $n$ is the number of cells (sample size). After the summary statistics are precomputed, the summary statistics based algorithm has a complexity of $O(m(p^3 + q^3))$, which doesn’t depend on the number of cells (sample size $n$). In single-cell differential expression (DE) analysis, the numbers of fixed and random effects, $p$ and $q$, are relatively small. Therefore, the algorithm is fast and scalable, and requires less computer memory. See the Supplementary Material in @Xu2025 for details.
 
-## FLASHMM
+## Functions
 
 FLASHMM package provides two functions, *lmm* and *lmmfit*, for fitting LMM. The *lmm* function uses summary statistics as arguments. The *lmmfit* function is a wrapper function of *lmm*, which directly uses cell-level data and computes the summary statistics inside the function. The *lmmfit* function is simple to be operated but it has a limitation of memory use. For extremely large scale data, we can precompute the summary-level data by \eqref{eq:sdata}, and then use *lmm* function to fit LMM. FLASHMM provides *lmmtest* function to perform statistical test on the fixed effects and the contrasts of the fixed effects. 
 
@@ -466,9 +422,65 @@ rownames(out) <- NULL
 out[(out$FDR < 0.05) & (abs(out$coef) > 0.5) , ]
 ```
 
+
+# Methods\label{LMMmethods}
+
+## LMM parameter estimation
+
+@HartleyRao1967 developed the maximum likelihood (ML) method for estimating the LMM parameters (fixed effects and variance components). @PattersonThompson1971 proposed a modified maximum likelihood procedure which partitions the data into two mutually uncorrelated parts, one being free of the fixed effects used for estimating variance components, called restricted maximum likelihood (REML) method. The REML estimator is unbiased. The ML estimator of variance components is biased in general. With variance components, $\theta$, estimated, the fixed effects estimated by either ML or REML are given as follows
+$$
+\hat\beta = (X^TV_{\theta}^{-1}X )^{-1}X^TV_{\theta}^{-1}y,
+$$
+with covariance matrix 
+$$var(\hat\beta) = (X^TV_{\theta}^{-1}X)^{-1},$$
+where $\theta = (\theta_0, \theta_1,\ldots, \theta_K)$, $\theta_0 = \sigma^2$, $\theta_k = \sigma^2_k$, and
+$$V_{\theta} = \theta_0 I_n + \theta_1 Z_1Z_1^T + \ldots + \theta_K Z_KZ_K^T.$$
+
+Estimating the variance components by either ML or REML is a numerical optimization problem. Various iterative methods based on log likelihood, called gradient methods, have been proposed [@Searle2006]. The gradient methods are represented by the iteration equation
+\begin{equation}\label{eq:gradient}
+\theta^{(i+1)} = \theta^{(i)} + \Gamma(\theta^{(i)})\frac{\partial l(\theta^{(i)})}{\partial\theta},
+\end{equation}
+where $\partial l(\theta)/\partial\theta$ is the gradient of the log likelihood function, and $\Gamma(\theta)$ is a modifier matrix of the gradient direction, which can be specified by Newton–Raphson, Fisher scoring or average information. The Newton-Raphson method uses the inverse of the negative Hessian matrix (observed Fisher information) as a modifier, while the Fisher scoring method uses the inverse of Fisher information matrix (the expectation of negative Hessian matrix). The average information method uses the inverse of the average of the negative Hessian matrix and its expectation. The Fisher scoring method is more stable than others because the negative Hessian matrix may not be positive definite but its expectation is positive definite. 
+
+
+## Hypothesis testing
+
+The hypotheses for testing fixed effects and variance components can be respectively defined as
+$$
+H_{0, i}: \beta_i = 0 ~~\text{versus}~~H_{1,i}: \beta_i\ne 0,
+$$
+$$
+H_{0, k}: \theta_k \leq 0 ~~\text{versus}~~H_{1,k}: \theta_k > 0,
+$$
+where $\theta_k$, $k=1, \ldots, K$, represent the parameters of variance components $\sigma^2_k$ but are allowed to be negative. The lower boundary of the parameters, $\theta$, can be the negative value such that the variance-covariance matrix, $V_{\theta}$, remains definable (positive definite). The negative lower boundary exists and can be less than or equal to $- \sigma^2/\lambda_{max}$, where $\lambda_{max} > 0$ is the largest singular value of $ZZ^T$ or $Z^TZ$. If $\theta_k > 0$, then $\sigma_k^2 = \theta_k$ is definable and the mixed model is well-specified. Otherwise, if $\theta_k \le 0$, the mixed model is miss-specified and the $k$-th random-effect component shouldn't be included.
+
+Allowing the parameters of variance components to take negative value avoids the zero boundary at the null hypothesis for the variance components. Consequently, the asymptotic normality of the maximum likelihood estimates at the null hypothesis holds under regularity conditions, which enables us to use z-statistics or t-statistics for hypothesis testing of the fixed effects and variance components. The t-statistics for fixed effects are given by
+\begin{equation}
+\label{eq:tcoef}
+T_i = \frac{\hat\beta_i}{\sqrt{var(\hat\beta_i)}} = \frac{\hat\beta_i}{\sqrt{var(\hat\beta)_{ii}}} ~\sim ~t(n - p).
+\end{equation}
+The t-statistic for a contrast, a linear combination of the estimated fixed effects, $c^T\hat\beta$, is 
+\begin{equation}
+\label{eq:tcontrast}
+T_c = \frac{c^T\hat\beta}{\sqrt{c^Tvar(\hat\beta) c}} \sim t(n-p).
+\end{equation}
+The z-statistics for the parameters of variance components are given by
+\begin{equation}
+\label{zvarcomp}
+Z_{\theta_k} = \frac{\hat\theta_k}{\sqrt{[I(\hat\theta)^{-1}]_{kk}}} \sim N(0, 1),
+\end{equation}
+where $I(\theta)$ is the Fisher information matrix.
+
+We can also use likelihood ratio test (LRT) statistics to test the variance components. Let $\theta_{sub}$ be the sub-vector of $\theta$ that is not equal to zero. Let $L(\hat\theta_{sub})$ and $L(\hat\theta)$ be the maximum likelihood for the sub-model and the full model, respectively. Note that $L(\hat\theta_{sub})$ and $L(\hat\theta)$ depend on $\hat\beta$ for the ML method which is suppressed for simplicity of notation. The LRT statistic,
+\begin{equation}\label{lrtvarcomp}
+\lambda_{LR} = 2[\log(L(\hat\theta)) - \log(L(\hat\theta_{sub}))] \sim\chi^2_r,
+\end{equation}
+an asymptotic $\chi^2$ distribution, where $r$ is the number of zero variance components. The LRT requires that both sub and full models are fitted by the same method, either ML or REML, and the design matrix of fixed effects must be the same for both sub and full models when using REML method to fit the models.
+
+
 # Remarks
   
-Building design matrices for fixed and random effects is a key step in LMM-based differential expression analysis. Including library size, a normalization factor for scRNA-seq, as a fixed effect can help reduce p-value inflation. If necessary, we can add principal components as fixed effects to further mitigate unknown batch effects.
+Building design matrices for fixed and random effects is a key step in LMM-based differential expression analysis. Including library size, a normalization factor for scRNA-seq, as a fixed effect can help reduce p-value inflation. If necessary, we can add principal components as fixed effects to further mitigate unknown technical effects.
 
 In differential expression analysis, modeling samples (subjects) as random effects accounts for between-sample variability and within-sample correlation. If samples have different effects on gene expression, we can also model them as fixed effects. However, this can lead to overfitting when the number of samples (subjects) is large. For scRNA-seq data, this may also result in collinearity when the samples are nested within an experimental condition.
 
