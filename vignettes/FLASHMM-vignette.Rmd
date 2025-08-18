@@ -71,7 +71,7 @@ where $Y = [y_1^T, \ldots, y_m^T]^T$ is a $m$-by-$n$ matrix of gene expression p
 
 ## Functions
 
-FLASHMM package provides two functions, *lmm* and *lmmfit*, for fitting LMM. The *lmm* function uses summary statistics as arguments. The *lmmfit* function is a wrapper function of *lmm*, which directly uses cell-level data and computes the summary statistics inside the function. The *lmmfit* function is simple to be operated but it has a limitation of memory use. For extremely large scale data, we can precompute the summary-level data by \eqref{eq:sdata}, and then use *lmm* function to fit LMM. FLASHMM provides *lmmtest* function to perform statistical test on the fixed effects and the contrasts of the fixed effects. 
+The FLASHMM package provides two functions for fitting LMMs: *lmm* and *lmmfit*. The *lmm* function takes summary statistics as input, whereas *lmmfit* is a wrapper around *lmm* that directly processes cell-level data and computes the summary statistics internally. While *lmmfit* is easier to use, it has the limitation of higher memory consumption. For extremely large scale data, we can precompute the summary-level data by \eqref{eq:sdata}, and then use *lmm* function to fit LMMs. FLASHMM provides *lmmtest* function to perform statistical test on the fixed effects and the contrasts of the fixed effects. 
 
 In summary, FLASHMM package provides the following main functions.
 
@@ -122,7 +122,7 @@ rm(refdata)
 
 For the simulated reference dataset, we don't need to change the metadata column names because the columns of samples, clusters, and treatments, are already named ‘sam’, ‘cls’, and ‘trt’, respectively. For a real biological reference dataset, the column names of the metadata should be correspondingly changed as ‘sam’, ‘cls’ and ‘trt’.
 
-Next we use the reference counts and metadata to simulate scRNA-seq data that contains 100 genes and 100,000 cells from 25 samples (subjects) and 10 clusters (cell-types) with 2 treatments. There are 10 differentially expressed genes.
+Next we use the reference counts and metadata to simulate scRNA-seq data that contains 100 genes and 100,000 cells from 25 samples (subjects) and 10 clusters (cell-types) with 2 treatments. There are totally 10 DE genes specific to a cell-type.
 
 ```{r Simulate dataset, echo = TRUE, message = FALSE}
 ##Generate the scRNA-seq data by simuRNAseq function.
@@ -181,7 +181,7 @@ with a dimension $d = ncol(Z)$. If appropriate, for example, we also take accoun
 \begin{equation}\label{randomeff2}
 Z = model.matrix(\sim 0 + subject + subject:time)
 \end{equation}
-with dimensions $d = c(ncol(Z)/2, ncol(Z)/2)$, where $ncol(Z)/2$ equals to the number of subjects.
+with dimensions $d = c(ncol(Z)/2, ncol(Z)/2)$, a 2-vector, where $ncol(Z)/2$ equals to the number of subjects.
 
 ```{r Expression matrix, echo = TRUE, message = FALSE, tidy = TRUE, tidy.opts = list(width.cutoff = 90)}
 
@@ -243,9 +243,10 @@ Ynorm <- rowSums(Y*Y)
 
 ##The summary-level data can also be computed by sslmm function:
 ss <- sslmm(X, Y, Z)
-  XX <- ss$XX; XY <- ss$XY
-  ZX <- ss$ZX; ZY <- ss$ZY; ZZ <- ss$ZZ
-  n <- ss$n; Ynorm <- ss$Ynorm
+
+XX <- ss$XX; XY <- ss$XY
+ZX <- ss$ZX; ZY <- ss$ZY; ZZ <- ss$ZZ
+n <- ss$n; Ynorm <- ss$Ynorm
 
 rm(X, Y, Z, Za) #releasing memory.
 
@@ -427,7 +428,7 @@ out[(out$FDR < 0.05) & (abs(out$coef) > 0.5) , ]
 
 ## LMM parameter estimation
 
-@HartleyRao1967 developed the maximum likelihood (ML) method for estimating the LMM parameters (fixed effects and variance components). @PattersonThompson1971 proposed a modified maximum likelihood procedure which partitions the data into two mutually uncorrelated parts, one being free of the fixed effects used for estimating variance components, called restricted maximum likelihood (REML) method. The REML estimator is unbiased. The ML estimator of variance components is biased in general. With variance components, $\theta$, estimated, the fixed effects estimated by either ML or REML are given as follows
+@HartleyRao1967 developed the maximum likelihood (ML) method for estimating the LMM parameters (fixed effects and variance components). @PattersonThompson1971 proposed a modified maximum likelihood procedure, known as restricted maximum likelihood (REML), which partitions the data into two mutually uncorrelated parts, one being free of the fixed effects used for estimating variance components. The REML estimator is unbiased, whereas the ML estimator of variance components is generally biased. With variance components, $\theta$, estimated, the fixed effects estimated by either ML or REML are given as follows
 $$
 \hat\beta = (X^TV_{\theta}^{-1}X )^{-1}X^TV_{\theta}^{-1}y,
 $$
