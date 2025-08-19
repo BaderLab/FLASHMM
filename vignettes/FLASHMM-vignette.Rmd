@@ -56,7 +56,7 @@ Here $\mathbf{0}$ is a vector or matrix of zero elements, $I_n$ is an $n\times n
 
 ## The fast and scalable algorithm
 
-@HartleyRao1967 developed the maximum likelihood (ML) method for estimating the LMM parameters (fixed effects and variance components). @PattersonThompson1971 proposed a modified maximum likelihood procedure, called restricted maximum likelihood (REML) method. Estimating the variance components by either ML or REML is a numerical optimization problem. The log-likelihood based gradient methods have been proposed [@Searle2006]. 
+@HartleyRao1967 developed the maximum likelihood (ML) method for estimating the LMM parameters (fixed effects and variance components). @PattersonThompson1971 proposed a modified maximum likelihood procedure, known as restricted maximum likelihood (REML) method. Estimating the variance components by either ML or REML is a numerical optimization problem. The log-likelihood based gradient methods have been proposed [@Searle2006]. 
 
 We developed a fast and scalable algorithm for implementing the gradient methods based on summary statistics. Let $XX$, $XY$, $ZX$, $ZY$, and $ZZ$ denote a matrix, respectively, which define the summary statistics that are computed from cell-level data $X$, $Y$ and $Z$ as follows: 
 \begin{equation}
