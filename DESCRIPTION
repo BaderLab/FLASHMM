@@ -5,7 +5,7 @@ Authors@R: c(
   person("Changjiang", "Xu", email = "changjiang.xu@utoronto.ca", role = c("aut", "cre")),
   person("Delaram", "Pouyabahar", email = "d.pouyabahar@mail.utoronto.ca", role = "ctb"),
   person("Veronique", "Voisin", email = "veronique.voisin@gmail.com", role = "ctb"),
-  person("Gary", "Bader", role = "ctb"))
+  person("Gary", "Bader", email = "gary.bader@utoronto.ca", role = "ctb"))
 Description: A fast and scalable linear mixed-effects model (LMM) estimation algorithm 
     for analysis of single-cell differential expression. The algorithm uses 
     summary-level statistics and requires less computer memory to fit the LMM. 
