@@ -81,7 +81,9 @@ In summary, FLASHMM package provides the following main functions.
 * *contrast.matrix*: construct a contrast matrix of the fixed effects for various comparisons.
 * *simuRNAseq*: simulate multi-sample multi-cell-type scRNA-seq data.
 
+
 ```{r echo = TRUE, results = "hide", message = FALSE}
+
 ##Install FLASHMM from CRAN.
 # install.packages("FLASHMM")
 ##Install FLASHMM from Github.
@@ -96,7 +98,7 @@ library(FLASHMM)
 
 We use a simulated multi-sample multi-cell-type single-cell RNA-seq (scRNA-seq) dataset to illustrate how to utilize FLASHMM to perform single-cell differential expression analysis. In this example, we are interested in identifying the genes differentially expressed between two treatments (conditions) within a cell type using a linear mixed-effects model (LMM).
 
-## Simulating scRNA-seq data\label{simulator}
+## Simulating scRNA-seq data {#simulator}
 
 We simulate the multi-sample multi-cell-type scRNA-seq data by *simuRNAseq* function in FLASHMM package. The *simuRNAseq* function generates scRNA-seq data with or without a reference dataset. The reference dataset consists of count data and metadata. The count data is a genes-by-cells matrix. The metadata is a data frame containing three columns: samples (subjects), cell-types (clusters), and treatments (experimental conditions), and the three columns must be named ‘sam’, ‘cls’, and ‘trt’, respectively. 
 
@@ -154,12 +156,12 @@ Y = \log(1+\text{counts}),
 \end{equation}
 in which each row represents the expression profile for a gene. The analyses involve following steps: LMM design, LMM fitting, and hypothesis testing.
 
-### LMM design\label{LMMdesign}
+### LMM design {#LMMdesign}
 
 LMM provides a framework to represent the single-cell gene expression profile by incorporating fixed effects, which capture systematic differences across experimental conditions, and random effects, which model the correlations within subjects and the variations between subjects. Constructing design matrices for fixed and random effects is an important step in LMM-based DE analysis. 
 
 **Design matrix for fixed effects**:
-As a general linear model design, the fixed effect design matrix can be created by model.matrix function as follows
+As a general linear model design, the fixed effect design matrix can be created by *model.matrix* function as follows
 \begin{equation}\label{fixedeff}
 X = model.matrix(\sim 0 + log(library.size) + covariates + cell.type + cell.type:treatment),
 \end{equation}
@@ -208,19 +210,18 @@ range(Za[, 1:d] - Z) #identical to the single-component design
 rm(dat) #releasing memory
 ```
 
-### LMM fitting\label{LMMfit}
+### LMM fitting {#LMMfit}
 
 We use either *lmm* or *lmmfit* function to fit LMMs. With the cell-level data matrices $Y$, $X$ and $Z$, the LMMs can be fit by
 $$lmmfit(Y, X, Z, d = d),$$
 where $d$ is a vector of the numbers of random-effects in different components. For $K$ components of random-effects, $d = (q_1, \ldots, q_K)$, where $q_k$ is the number of columns of the design matrix $Z_k$ for the $k$-th random-effect component. 
 
-The *lmmfit* function has a limitation of memory use. For extremely large-scale data, it is recommended to pre-compute and store the summary-level data: $XX$, $XY$, $ZX$, $ZY$, $ZZ$, and $Y_{norm}$, defined in \eqref{eq:sdata}, and then use the *lmm* function to fit the LMMs as follows:
+The *lmmfit* function has high memory usage. For extremely large-scale data, it is recommended to pre-compute and store the summary-level data: $XX$, $XY$, $ZX$, $ZY$, $ZZ$, and $Y_{norm}$, defined in \eqref{eq:sdata}, and then use the *lmm* function to fit the LMMs as follows:
 $$lmm(XX, XY, ZX, ZY, ZZ, Ynorm = Ynorm, n = n, d = d).$$
-The summary-level data doesn't depend on the sample size $n$. This makes *lmm* memory-efficient. 
-
-The default method in the *lmm* and *lmmfit* functions is restricted maximum likelihood (REML), that is, method = 'REML'. If you use the maximum likelihood (ML) method to fit the LMM, set method = 'ML' in the *lmm* and *lmmfit* functions.
+The summary-level data doesn't depend on the sample size $n$. This makes *lmm* memory-efficient. By default, the *lmm* and *lmmfit* functions use the restricted maximum likelihood (REML) method (method = 'REML'). To fit the LMM using maximum likelihood (ML), set method = 'ML'.
 
 ```{r LMM fitting, echo = TRUE, message = FALSE, warning = FALSE}
+
 ##Option 1: Fit LMM based on cell-level data.
 max.iter <- 100
 epsilon <- 1e-5
@@ -266,7 +267,7 @@ The outputs from LMM fitting contain:
 * covariance matrix of the coefficients (fixed effects), and t-values and p-values for the hypothesis testing on the coefficients;
 * maximum log-likelihood, the number of iterations, and the first partial derivatives of the log likelihood.
 
-**Convergence of LMM fitting**: If the absolute first partial derivatives of the log likelihood are all less than the convergence tolerance, assigned by the argument *epsilon* in the *lmm* and *lmmfit* functions, the LMM fitting converges, otherwise it doesn't converge. The genes for which LMM fitting doesn't converge should be excluded in the subsequent analysis because the estimated coefficients for these genes are not reliable.
+**Convergence of LMM fitting**: The LMM fitting is considered converged if the absolute values of first partial derivatives of the log-likelihood are smaller than the convergence tolerance (*epsilon*), specified in the *lmm* and *lmmfit* functions; otherwise, the fitting does not converge. The genes for which LMM fitting doesn't converge should be excluded in the subsequent analysis because the estimated coefficients for these genes are not reliable.
 
 ```{r, echo = TRUE, message = FALSE, warning = FALSE}
 ##Check the genes for which LMM fitting converges.
@@ -347,7 +348,7 @@ head(test)
 
 **Testing of variance component in the LMM with single-component random effects**
 
-Since the simulated data is generated by the LMM with single-component random effects, see Section \ref{simulator}, the variance component of random effects should not be zero. Next we use z-statistic \eqref{zvarcomp} to test the variance component. Note that 'fit1' is the output of fitting the LMM using *lmmfit* function, see Section \ref{LMMfit}.
+Since the simulated data is generated by the LMM with single-component random effects, see [Simulating scRNA-seq data Section](#simulator), the variance component of random effects should not be zero. Next we use z-statistic \eqref{zvarcomp} to test the variance component. Note that 'fit1' is the output of fitting the LMM using *lmmfit* function, see [LMM fitting Section](#LMMfit).
 
 ```{r}
 ##Using z-test for testing variance components
@@ -365,7 +366,7 @@ sum(p < 0.05/length(p)) #Bonferroni correction
 
 **Testing of variance component in the LMM with two-component random effects**
 
-As the LMM design given in Section \ref{LMMdesign}, the LMM with two-component random effects has two variance components, the first one for random effects of subjects and the second one for random effects of measurement times within a subject. Since the simulated data was generated by the LMM with one-component random effects (i.e., subjects), the second variance component should be zero. Next we use both z-statistic \eqref{zvarcomp} and LRT statistic \eqref{lrtvarcomp} to test the second variance component of the random effects. Note that 'fit2' is the output of fitting the LMM using *lmmfit* function, see Section \ref{LMMfit}.
+As described in [LMM design Section](#LMMdesign), the LMM with two-component random effects has two variance components, the first one for random effects of subjects and the second one for random effects of measurement times within a subject. Since the simulated data was generated by the LMM with one-component random effects (i.e., subjects), the second variance component should be zero. Next we use both z-statistic \eqref{zvarcomp} and LRT statistic \eqref{lrtvarcomp} to test the second variance component of the random effects. Note that 'fit2' is the output of fitting the LMM using *lmmfit* function, see [LMM fitting Section](#LMMfit).
 
 ```{r}
 ##(1) z-test for testing the second variance component
@@ -424,7 +425,7 @@ out[(out$FDR < 0.05) & (abs(out$coef) > 0.5) , ]
 ```
 
 
-# Methods\label{LMMmethods}
+# Methods
 
 ## LMM parameter estimation
 
