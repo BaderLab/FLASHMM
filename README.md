@@ -165,8 +165,8 @@ fit$p[, 1:4]
 ```
 
 **Differentially expressed (DE) genes**: The coefficients of the
-interactions, cls$i$ :trtB, represent the effects of treatment B versus
-A in a cell-type (cls$i$).
+interactions, cls*i* :trtB, represent the effects of treatment B versus
+A in a cell-type (cls*i*).
 
 ``` r
 ##Coefficients, t-values, and p-values for the genes specific to a cell-type.
