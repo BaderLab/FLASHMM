@@ -12,14 +12,13 @@ mixed-effects model is a powerful tool in single-cell studies due to
 their ability to model intra-subject correlation and inter-subject
 variability.
 
-FLASHMM package provides two functions, *lmm* and *lmmfit*, for fitting
-LMM. The *lmm* function uses summary statistics as arguments. The
-*lmmfit* function is a wrapper function of *lmm*, which directly uses
-cell-level data and computes the summary statistics inside the function.
-The lmmfit function is simple to be operated but it has a limitation of
-memory use. For extremely large scale data, it is recommended to
-precompute and store the summary statistics and then use *lmm* function
-to fit LMM.
+The FLASHMM package provides two functions for fitting LMMs: *lmm* and
+*lmmfit*. The *lmm* function takes summary statistics as input, whereas
+*lmmfit* is a wrapper around *lmm* that directly processes cell-level
+data and computes the summary statistics internally. While *lmmfit* is
+easier to use, it has the limitation of higher memory consumption. For
+extremely large scale data, it is recommended to precompute and store
+the summary statistics and then use *lmm* function to fit LMMs.
 
 In summary, FLASHMM package provides the following main functions.
 
@@ -47,8 +46,9 @@ devtools::install_github("https://github.com/Baderlab/FLASHMM")
 
 ## Example
 
-This is a basic example which shows you how to use FLASHMM to perform
-single-cell differential expression analysis.
+This basic example shows how to use FLASHMM for analyzing single-cell
+differential expression. See the package vignette for details:
+<https://cran.r-project.org/web/packages/FLASHMM/vignettes/FLASHMM-vignette.html>.
 
 ``` r
 library(FLASHMM)
@@ -78,6 +78,15 @@ head(metadata)
 #> Cell4  B8   1   B      80
 #> Cell5 B11   4   B     123
 #> Cell6  A4   3   A     113
+dat$DEgenes
+#>      gene       beta cluster
+#> 45 Gene45  0.5496463       1
+#> 46 Gene46  0.3652007       2
+#> 47 Gene47  0.8306937       3
+#> 48 Gene48 -0.9476624       3
+#> 49 Gene49 -0.8751216       3
+#> 50 Gene50  0.9050662       3
+
 rm(dat)
 ```
 
@@ -135,9 +144,8 @@ identical(fit, fitss)
 ``` r
 ## Testing coefficients (fixed effects)
 test <- lmmtest(fit)
-# head(test)
-
-## The t-value and p-values are identical with those provided in the LMM fit.
+# head(test) The t-value and p-values are identical with those provided in the
+# LMM fit.
 range(test - cbind(t(fit$coef), t(fit$t), t(fit$p)))
 #> [1] 0 0
 
@@ -153,7 +161,36 @@ fit$p[, 1:4]
 #> cls3:trtB    0.1322220329 1.338870e-01 0.7144983040 3.745743e-01
 #> cls4:trtB    0.7442524470 9.307711e-02 0.6485383571 5.182577e-01
 
-# fit$coef[, 1:4] fit$t[, 1:4]
+# fit$coef[, 1:4]; fit$t[, 1:4]
+```
+
+**Differentially expressed (DE) genes**: The coefficients of the
+interactions, cls$i$ :trtB, represent the effects of treatment B versus
+A in a cell-type (cls$i$).
+
+``` r
+##Coefficients, t-values, and p-values for the genes specific to a cell-type.
+index <- grep(":", rownames(fit$coef))
+ce <- fit$coef[index, ]
+tv <- fit$t[index, ]
+pv <- fit$p[index, ]
+
+out <- data.frame(
+    gene = rep(colnames(ce), nrow(ce)), 
+    cluster = rep(rownames(ce), each = ncol(ce)),
+    coef = c(t(ce)), t = c(t(tv)), p = c(t(pv)))
+
+##FDR.
+out$FDR <- p.adjust(out$p, method = "fdr")
+
+##The DE genes with FDR < 0.05
+rownames(out) <- NULL
+out <- out[order(out$p), ]
+out[out$FDR < 0.05, ]
+#>       gene   cluster       coef         t            p          FDR
+#> 150 Gene50 cls3:trtB  0.6918507  6.534829 1.017003e-10 2.034006e-08
+#> 147 Gene47 cls3:trtB  0.7065409  5.971113 3.279879e-09 3.279879e-07
+#> 148 Gene48 cls3:trtB -0.5870280 -4.681093 3.250047e-06 2.166698e-04
 ```
 
 **Using contrasts**: We can make comparisons using contrasts. For
@@ -236,14 +273,14 @@ qqplot(runif(length(p)), p, xlab = "Uniform quantile", ylab = "Z-test p-value", 
 abline(0, 1, col = "gray")
 ```
 
-<img src="man/figures/README-unnamed-chunk-11-1.png" width="100%" />
+<img src="man/figures/README-unnamed-chunk-12-1.png" width="100%" />
 
 ``` r
 qqplot(runif(length(pLRT)), pLRT, xlab = "Uniform quantile", ylab = "LRT p-value", col = "blue")
 abline(0, 1, col = "gray")
 ```
 
-<img src="man/figures/README-unnamed-chunk-11-2.png" width="100%" />
+<img src="man/figures/README-unnamed-chunk-12-2.png" width="100%" />
 
 ``` r
 sessionInfo()

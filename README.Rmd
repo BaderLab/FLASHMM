@@ -20,7 +20,7 @@ knitr::opts_chunk$set(
 
 FLASH-MM is a method (package name: FLASHMM) for analysis of single-cell differential expression using a linear mixed-effects model (LMM). The mixed-effects model is a powerful tool in single-cell studies due to their ability to model intra-subject correlation and inter-subject variability.
 
-FLASHMM package provides two functions, *lmm* and *lmmfit*, for fitting LMM. The *lmm* function uses summary statistics as arguments. The *lmmfit* function is a wrapper function of *lmm*, which directly uses cell-level data and computes the summary statistics inside the function. The lmmfit function is simple to be operated but it has a limitation of memory use. For extremely large scale data, it is recommended to precompute and store the summary statistics and then use *lmm* function to fit LMM.
+The FLASHMM package provides two functions for fitting LMMs: *lmm* and *lmmfit*. The *lmm* function takes summary statistics as input, whereas *lmmfit* is a wrapper around *lmm* that directly processes cell-level data and computes the summary statistics internally. While *lmmfit* is easier to use, it has the limitation of higher memory consumption. For extremely large scale data, it is recommended to precompute and store the summary statistics and then use *lmm* function to fit LMMs.
 
 In summary, FLASHMM package provides the following main functions.
 
@@ -47,7 +47,7 @@ devtools::install_github("https://github.com/Baderlab/FLASHMM")
 
 ## Example
 
-This is a basic example which shows you how to use FLASHMM to perform single-cell differential expression analysis.
+This basic example shows how to use FLASHMM for analyzing single-cell differential expression. See the package vignette for details: https://cran.r-project.org/web/packages/FLASHMM/vignettes/FLASHMM-vignette.html.
 
 ```{r}
 library(FLASHMM)
@@ -66,6 +66,8 @@ names(dat)
 counts <- dat$counts
 metadata <- dat$metadata
 head(metadata)
+dat$DEgenes
+
 rm(dat)
 ```
 
@@ -121,14 +123,38 @@ identical(fit, fitss)
 ##Testing coefficients (fixed effects)
 test <- lmmtest(fit)
 #head(test)
-
 ##The t-value and p-values are identical with those provided in the LMM fit.
 range(test - cbind(t(fit$coef), t(fit$t), t(fit$p)))
 
 fit$p[, 1:4]
 
-#fit$coef[, 1:4]
-#fit$t[, 1:4]
+#fit$coef[, 1:4]; fit$t[, 1:4]
+
+```
+
+**Differentially expressed (DE) genes**: The coefficients of the interactions, cls$i$
+:trtB, represent the effects of treatment B versus A in a cell-type (cls$i$). 
+
+```{r}
+##Coefficients, t-values, and p-values for the genes specific to a cell-type.
+index <- grep(":", rownames(fit$coef))
+ce <- fit$coef[index, ]
+tv <- fit$t[index, ]
+pv <- fit$p[index, ]
+
+out <- data.frame(
+	gene = rep(colnames(ce), nrow(ce)), 
+	cluster = rep(rownames(ce), each = ncol(ce)),
+	coef = c(t(ce)), t = c(t(tv)), p = c(t(pv)))
+
+##FDR.
+out$FDR <- p.adjust(out$p, method = "fdr")
+
+##The DE genes with FDR < 0.05
+rownames(out) <- NULL
+out <- out[order(out$p), ]
+out[out$FDR < 0.05, ]
+
 ```
 
 **Using contrasts**: We can make comparisons using contrasts. For example, the effects of treatment B vs A in all clusters can be tested using the contrast constructed as follows.
