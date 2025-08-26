@@ -151,8 +151,6 @@ out <- data.frame(
 out$FDR <- p.adjust(out$p, method = "fdr")
 
 ##The DE genes with FDR < 0.05
-rownames(out) <- NULL
-out <- out[order(out$p), ]
 out[out$FDR < 0.05, ]
 
 ```

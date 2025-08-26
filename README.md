@@ -184,13 +184,11 @@ out <- data.frame(
 out$FDR <- p.adjust(out$p, method = "fdr")
 
 ##The DE genes with FDR < 0.05
-rownames(out) <- NULL
-out <- out[order(out$p), ]
 out[out$FDR < 0.05, ]
 #>       gene   cluster       coef         t            p          FDR
-#> 150 Gene50 cls3:trtB  0.6918507  6.534829 1.017003e-10 2.034006e-08
 #> 147 Gene47 cls3:trtB  0.7065409  5.971113 3.279879e-09 3.279879e-07
 #> 148 Gene48 cls3:trtB -0.5870280 -4.681093 3.250047e-06 2.166698e-04
+#> 150 Gene50 cls3:trtB  0.6918507  6.534829 1.017003e-10 2.034006e-08
 ```
 
 **Using contrasts**: We can make comparisons using contrasts. For
