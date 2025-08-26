@@ -188,7 +188,7 @@ To use the maximum likelihood (ML) method to fit the LMM, set method =
 fit1 <- lmmfit(Y, X, Z, d = d, method = "ML")
 ```
 
-### LMM with two-components random effects
+### LMM with two-component random effects
 
 If appropriate, for example, we also take account of the measurement
 time as a random effect within a subject, we may fit data using the LMM
@@ -205,7 +205,7 @@ metadata$time <- sample(1:2, n, replace = TRUE)
 Z <- model.matrix(~0 + sam + sam:time, data = metadata)
 d <- c(ncol(Z)/2, ncol(Z)/2)  #dimension
 
-## Fit the LMM with Two-component random effects.
+## Fit the LMM with two-component random effects.
 fit2 <- lmmfit(Y, X, Z, d = d, method = "ML")
 ```
 
@@ -232,14 +232,14 @@ LRT <- 2*(fit2$logLik - fit1$logLik)
 pLRT <- pchisq(LRT, df = 1, lower.tail = FALSE)
 
 ##QQ-plot
-qqplot(runif(length(p)), p, xlab = "Uniform quantile", ylab = "Z-test p-value")
+qqplot(runif(length(p)), p, xlab = "Uniform quantile", ylab = "Z-test p-value", col = "blue")
 abline(0, 1, col = "gray")
 ```
 
 <img src="man/figures/README-unnamed-chunk-11-1.png" width="100%" />
 
 ``` r
-qqplot(runif(length(pLRT)), pLRT, xlab = "Uniform quantile", ylab = "LRT p-value")
+qqplot(runif(length(pLRT)), pLRT, xlab = "Uniform quantile", ylab = "LRT p-value", col = "blue")
 abline(0, 1, col = "gray")
 ```
 
@@ -265,7 +265,7 @@ sessionInfo()
 #> [1] stats     graphics  grDevices utils     datasets  methods   base     
 #> 
 #> other attached packages:
-#> [1] FLASHMM_1.2.1
+#> [1] FLASHMM_1.2.3
 #> 
 #> loaded via a namespace (and not attached):
 #>  [1] Matrix_1.7-3       miniUI_0.1.2       compiler_4.4.3     promises_1.3.3    
