@@ -67,7 +67,7 @@ names(dat)
 #> [1] "ref.mean.dispersion" "metadata"            "counts"             
 #> [4] "DEgenes"             "treatment"
 
-#counts and meta data
+##counts and meta data
 counts <- dat$counts
 metadata <- dat$metadata
 head(metadata)
@@ -78,6 +78,8 @@ head(metadata)
 #> Cell4  B8   1   B      80
 #> Cell5 B11   4   B     123
 #> Cell6  A4   3   A     113
+
+##DE genes
 dat$DEgenes
 #>      gene       beta cluster
 #> 45 Gene45  0.5496463       1
@@ -166,7 +168,7 @@ fit$p[, 1:4]
 
 **Differentially expressed (DE) genes**: The coefficients of the
 interactions, cls*i* :trtB, represent the effects of treatment B versus
-A in a cell-type (cls*i*).
+A in a cell-type, cls*i*.
 
 ``` r
 ##Coefficients, t-values, and p-values for the genes specific to a cell-type.
