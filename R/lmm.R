@@ -109,43 +109,60 @@ for (jy in 1:ncol(ZY)) {
 		s <- c(rep(0, k), yry[jy]/(n-p))
 	} else s <- theta0
 
-vest <- varest(ZZres, zrz, zryj = zry[, jy], yryj = yry[jy], n = n, d = d, s = s, pres = pres, max.iter = max.iter, epsilon = epsilon)
-s <- vest$s
-dl <- vest$dl
-iter <- vest$iter
-Minv <- vest$Minv
-logdet <- vest$logdetM0
+	fit <- tryCatch({
+	  
+	  vest <- varest(ZZres, zrz, zryj = zry[, jy], yryj = yry[jy], n = n, d = d, s = s, pres = pres, max.iter = max.iter, epsilon = epsilon)
+	  s <- vest$s
+	  dl <- vest$dl
+	  iter <- vest$iter
+	  Minv <- vest$Minv
+	  logdet <- vest$logdetM0
+	  
+	  #if (max(abs(dl)) > epsilon) {
+	  #	warningText <- paste0("The first derivatives of log likelihood for Y", jy)
+	  #	dlText <- paste0(ifelse(abs(dl) > 1e-3,
+	  #	round(dl, 4), format(dl, digits = 3, scientific = TRUE)), collapse = ", ")
+	  #	warning(paste0(warningText, ": ", dlText, ", doesn't reach epsilon ", epsilon))
+	  #	}
+	  #
+	  
+	  sr <- s[1:k]/s[k+1]
+	  Dtheta <- sweep(ZZ, 1, STATS = rep(sr, times = d), FUN = "*") + diag(sum(d))
+	  M <- try(solve(Dtheta), silent = TRUE)
+	  if (inherits(M, "try-error")) M <- ginv(Dtheta)
+	  #qrM0 <- qr(M)
+	  #logdet <- sum(log(abs(diag(qrM0$qr))))
+	  
+	  M <- sweep(M, 2, STATS = rep(sr, times = d), FUN = "*")
+	  xvx <- XXinv + xxz%*%(ginv(diag(sum(d)) - M%*%(ZX%*%xxz))%*%(M%*%t(xxz)))
+	  xvy <- XY[, jy] - t(ZX)%*%(M%*%ZY[, jy])
+	  b <- xvx%*%xvy
+	  covbeta[,,jy] <- (xvx + t(xvx))*(s[k+1]/2)
+	  
+	  RE[, jy] <- M%*%(ZY[, jy] - ZX%*%b)
+	  
+	  niter <- c(niter, iter)
+	  theta[, jy] <- s
+	  setheta[, jy] <- sqrt(diag(Minv))
+	  beta[, jy] <- b
+	  dlogL <- cbind(dlogL, dl)
+	  loglike <- c(loglike, -(n-pres)*(1+log(2*pi*s[k+1]))/2 + logdet/2)
+	  sebeta[, jy] <- sqrt(diag(as.matrix(covbeta[,,jy])))
+	  
+	}, error = function(e) {
 
-#if (max(abs(dl)) > epsilon) {
-#	warningText <- paste0("The first derivatives of log likelihood for Y", jy)
-#	dlText <- paste0(ifelse(abs(dl) > 1e-3,
-#	round(dl, 4), format(dl, digits = 3, scientific = TRUE)), collapse = ", ")
-#	warning(paste0(warningText, ": ", dlText, ", doesn't reach epsilon ", epsilon))
-#	}
-#
+	  warning(paste0("Error in fitting LMM for ", colnames(ZY)[jy], ": ", e$message))
+	  
+	  return(e)
+	})
+	
+	if(inherits(fit, "error")){
+	  niter <- c(niter, NA)
+	  dl <- rep(NA, k + 1)
+	  dlogL <- cbind(dlogL, dl)
+	  loglike <- c(loglike, NA)
+	}
 
-sr <- s[1:k]/s[k+1]
-Dtheta <- sweep(ZZ, 1, STATS = rep(sr, times = d), FUN = "*") + diag(sum(d))
-M <- try(solve(Dtheta), silent = TRUE)
-if (inherits(M, "try-error")) M <- ginv(Dtheta)
-#qrM0 <- qr(M)
-#logdet <- sum(log(abs(diag(qrM0$qr))))
-
-M <- sweep(M, 2, STATS = rep(sr, times = d), FUN = "*")
-xvx <- XXinv + xxz%*%(ginv(diag(sum(d)) - M%*%(ZX%*%xxz))%*%(M%*%t(xxz)))
-xvy <- XY[, jy] - t(ZX)%*%(M%*%ZY[, jy])
-b <- xvx%*%xvy
-covbeta[,,jy] <- (xvx + t(xvx))*(s[k+1]/2)
-
-RE[, jy] <- M%*%(ZY[, jy] - ZX%*%b)
-
-niter <- c(niter, iter)
-theta[, jy] <- s
-setheta[, jy] <- sqrt(diag(Minv))
-beta[, jy] <- b
-dlogL <- cbind(dlogL, dl)
-loglike <- c(loglike, -(n-pres)*(1+log(2*pi*s[k+1]))/2 + logdet/2)
-sebeta[, jy] <- sqrt(diag(as.matrix(covbeta[,,jy])))
 }
 
 tval <- beta/sebeta
