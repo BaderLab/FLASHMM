@@ -67,16 +67,17 @@ ZX = Z^TX, ~ZY = Z^TY^T, ~ZZ = Z^TZ,\\
 Ynorm = [y_1y_1^T, \ldots, y_my_m^T],
 \end{array}
 \end{equation}
-where $Y = [y_1^T, \ldots, y_m^T]^T$ is a $m$-by-$n$ matrix of gene expression profile with each row $y_i$ corresponding to the expression of gene $i$, $i=1,\ldots,m$, $m$ is the number of genes and $n$ is the number of cells (sample size). After the summary statistics are precomputed, the summary statistics based algorithm has a complexity of $O(m(p^3 + q^3))$, which doesn’t depend on the number of cells (sample size $n$). In single-cell differential expression (DE) analysis, the numbers of fixed and random effects, $p$ and $q$, are relatively small. Therefore, the algorithm is fast and scalable, and requires less computer memory. See the Supplementary Material in @Xu2025 for details.
+where $Y = [y_1^T, \ldots, y_m^T]^T$ is a $m$-by-$n$ matrix of gene expression profile with each row $y_i$ corresponding to the expression of gene $i$, $i=1,\ldots,m$, $m$ is the number of genes and $n$ is the number of cells (sample size). After the summary statistics are precomputed, the summary statistics based algorithm has a complexity of $O(m(p^3 + q^3))$, which doesn’t depend on the number of cells (sample size $n$). In single-cell differential expression (DE) analysis, the numbers of fixed and random effects, $p$ and $q$, are relatively small. Therefore, the algorithm is fast and scalable, and requires less computer memory. See the Supplementary Material in @Xu2026 for details.
 
 ## Functions
 
-The FLASHMM package provides two functions for fitting LMMs: *lmm* and *lmmfit*. The *lmm* function takes summary statistics as input, whereas *lmmfit* is a wrapper around *lmm* that directly processes cell-level data and computes the summary statistics internally. While *lmmfit* is easier to use, it has the limitation of higher memory consumption. For extremely large scale data, we can precompute the summary-level data by \eqref{eq:sdata}, and then use *lmm* function to fit LMMs. FLASHMM provides *lmmtest* function to perform statistical test on the fixed effects and the contrasts of the fixed effects. 
+The FLASHMM package provides three functions: *lmm*, *lmmfit*, and *flashmm*, for fitting LMMs. The *lmm* function takes summary statistics as input, whereas *lmmfit* and *flashmm* are a wrapper around *lmm* that directly processes cell-level data and computes the summary statistics internally. The *lmmfit* takes the model design matrices as input. Instead the *flashmm* takes the model formulas as input, where the design matrices are generated internally. While *lmmfit* and *flashmm* are easier to use, they have the limitation of higher memory consumption. For extremely large scale data, we can precompute the summary-level data by \eqref{eq:sdata}, and then use *lmm* function to fit LMMs. FLASHMM provides *lmmtest* function to perform statistical test on the fixed effects and the contrasts of the fixed effects. 
 
 In summary, FLASHMM package provides the following main functions.
 
 * *lmm*: fit LMM using summary-level data.
-* *lmmfit*: fit LMM using cell-level data.
+* *lmmfit*: fit LMM using model design matrices based on cell-level data.
+* *flashmm*: fit LMM using model formulas based on cell-level data.
 * *lmmtest*: perform statistical tests on the fixed effects and their contrasts.
 * *contrast.matrix*: construct a contrast matrix of the fixed effects for various comparisons.
 * *simuRNAseq*: simulate multi-sample multi-cell-type scRNA-seq data.
@@ -96,61 +97,43 @@ library(FLASHMM)
 
 # Example
 
-We use a simulated multi-sample multi-cell-type single-cell RNA-seq (scRNA-seq) dataset to illustrate how to utilize FLASHMM to perform single-cell differential expression analysis. In this example, we are interested in identifying the genes differentially expressed between two treatments (conditions) within a cell type using a linear mixed-effects model (LMM).
+We use a simulated multi-sample multi-cell-type single-cell RNA-seq (scRNA-seq) dataset to illustrate how to utilize FLASHMM to perform single-cell differential expression analysis. In this example, we are interested in identifying the genes differentially expressed between two treatments (conditions) within a cell type.
 
 ## Simulating scRNA-seq data {#simulator}
 
-We simulate the multi-sample multi-cell-type scRNA-seq data by *simuRNAseq* function in FLASHMM package. The *simuRNAseq* function generates scRNA-seq data with or without a reference dataset. The reference dataset consists of count data and metadata. The count data is a genes-by-cells matrix. The metadata is a data frame containing three columns: samples (subjects), cell-types (clusters), and treatments (experimental conditions), and the three columns must be named ‘sam’, ‘cls’, and ‘trt’, respectively. 
+We simulate the multi-sample multi-cell-type scRNA-seq data by *simuRNAseq* function in FLASHMM package. The *simuRNAseq* function generates scRNA-seq data with or without a reference dataset. The reference dataset consists of count data and metadata. The count data is a genes-by-cells matrix. The metadata is a data frame containing three columns: samples (subjects), cell types (clusters), and treatments (experimental conditions), which are named as ‘sam’, ‘cls’, and ‘trt’, respectively. 
 
 The simulated expression count is generated by the negative binomial (NB) distribution with dispersion $\phi_g$ and mean $\mu_{g,ijk}$,
 \begin{equation}\label{nbinomsimu}
 y_{g, ijk}\sim NB(\mu_{g,ijk}, \phi_g),
 \end{equation}
 $$\log(\mu_{g,ijk}) = \log(\mu_g) + \alpha_{ijk} + \beta_{g, ij} + b_{g,k},$$ 
-where $y_{g, ijk}$ be the count for gene $g$ and the cell from subject $k = 1,\ldots, n_s$ and cell-type $j = 1, \ldots, n_c$ with treatment $i=1,2$. $\phi_g$ and $\mu_g$ are the dispersion and mean estimated from the reference data for gene $g$, $\alpha_{ijk}$ is a centered log-library-size for the cell $c_{ijk}$, $\beta_{g,ij}$ represents the effect of treatment $i$ specific to cell-type $j$, $b_{g,k} \sim N(0, \sigma^2_b)$ is a random effect of subject variation. For the non-DE genes, $\beta_{g,1j}=\beta_{g,2j}=0$. For the DE genes, $\beta_{g,1j} = 0$ and $\beta_{g, 2j}\sim \pm Uniform(a_1, a_2)$, a uniform distribution with $a_1a_2>0$, where $a_1$ and $a_2$ are the lower and upper bounds of the DE gene effect sizes. See the Supplementary Material in @Xu2025 for details.
+where $y_{g, ijk}$ be the count for gene $g$ and the cell from subject $k = 1,\ldots, n_s$ and cell type $j = 1, \ldots, n_c$ with treatment $i=1,2$. $\phi_g$ and $\mu_g$ are the dispersion and mean estimated from the reference data for gene $g$, $\alpha_{ijk}$ is a centered log-library-size for the cell $c_{ijk}$, $\beta_{g,ij}$ represents the effect of treatment $i$ specific to cell type $j$, $b_{g,k} \sim N(0, \sigma^2_b)$ is a random effect of subject variation. For the non-DE genes, $\beta_{g,1j}=\beta_{g,2j}=0$. For the DE genes, $\beta_{g,1j} = 0$ and $\beta_{g, 2j}\sim \pm Uniform(a_1, a_2)$, a uniform distribution with $a_1a_2>0$, where $a_1$ and $a_2$ are the lower and upper bounds of the DE gene effect sizes. See the Supplementary Material in @Xu2026 for details.
 
-For simplicity and demonstration purposes, we use a simulated reference dataset to generate the scRNA-seq data. First we simulate the reference dataset.
-
-```{r Reference dataset, echo = TRUE, message = FALSE}
-##Generate a reference dataset by simuRNAseq function.
-set.seed(2502)
-refdata <- simuRNAseq(nGenes = 100, nCells = 10000)
-counts <- refdata$counts #counts
-metadata <- refdata$metadata #metadata
-head(metadata)
-
-rm(refdata)
-```
-
-For the simulated reference dataset, we don't need to change the metadata column names because the columns of samples, clusters, and treatments, are already named ‘sam’, ‘cls’, and ‘trt’, respectively. For a real biological reference dataset, the column names of the metadata should be correspondingly changed as ‘sam’, ‘cls’ and ‘trt’.
-
-Next we use the reference counts and metadata to simulate scRNA-seq data that contains 100 genes and 100,000 cells from 25 samples (subjects) and 10 clusters (cell-types) with 2 treatments. There are totally 10 DE genes specific to a cell-type.
+Next we simulate scRNA-seq data that contains 100 genes and 100,000 cells from 25 samples (subjects) and 10 clusters (cell types) with 2 treatments. The samples are nested in one treatment A or B. There are totally 10 DE genes specific to a cell type.
 
 ```{r Simulate dataset, echo = TRUE, message = FALSE}
 ##Generate the scRNA-seq data by simuRNAseq function.
 set.seed(2503)
-dat <- simuRNAseq(counts, metadata = metadata, nGenes = 100, nCells = 100000, 
-       nsam = 25, ncls = 10, ntrt = 2, nDEgenes = 10)
-str(dat)
+dat <- simuRNAseq(nGenes = 100, nCells = 100000, nsam = 25, ncls = 10, ntrt = 2, nDEgenes = 10)
 
-##Samples (subjects) nested in one treatment A or B
-#table(dat$metadata$sam)
-#table(dat$metadata$trt)
-all(grep("A", dat$metadata$sam) %in% which(dat$metadata$trt == "A"))
-all(grep("B", dat$metadata$sam) %in% which(dat$metadata$trt == "B"))
+names(dat)
+dim(dat$counts)
+head(dat$metadata)
 
-rm(counts, metadata) #releasing memory
+##Samples are nested in one treatment A or B.
+table(dat$metadata[, c("trt", "sam")])
 ```
 
 The simulated data contains 
 
 * *counts*: a genes-by-cells matrix of expression counts
-* *metadata*: a data frame consisting of samples (sam), cell-types (cls) and treatments (trt).
+* *metadata*: a data frame consisting of samples (sam), cell types (cls) and treatments (trt).
 * *DEgenes*: differentially expressed (DE) genes.
 
 ## DE analysis of scRNA-seq data
 
-We perform differential expression (DE) analysis of the simulated data using FLASHMM package. We are to identify the significantly differentially expressed genes between two treatments in a cell-type based on the LMM. The gene expression profile is taken as log-transformed count matrix, 
+We perform differential expression (DE) analysis of the simulated data using FLASHMM package. We are to identify the significantly differentially expressed genes between two treatments in a cell type based on the LMM. The gene expression profile is taken as log-transformed count matrix, 
 \begin{equation}\label{exprs}
 Y = \log(1+\text{counts}),
 \end{equation}
@@ -160,106 +143,117 @@ in which each row represents the expression profile for a gene. The analyses inv
 
 LMM provides a framework to represent the single-cell gene expression profile by incorporating fixed effects, which capture systematic differences across experimental conditions, and random effects, which model the correlations within subjects and the variations between subjects. Constructing design matrices for fixed and random effects is an important step in LMM-based DE analysis. 
 
-**Design matrix for fixed effects**:
-As a general linear model design, the fixed effect design matrix can be created by *model.matrix* function as follows
+**Fixed effects**:
+As a general linear model design, the fixed effects can be specified by either model formula or design matrix as follows
 \begin{equation}\label{fixedeff}
-X = model.matrix(\sim 0 + log(library.size) + covariates + cell.type + cell.type:treatment),
+\begin{array}{l}
+fixed = log(library.size) + covariates + cell.type + cell.type:treatment,\\
+X = model.matrix(fixed),
+\end{array}
 \end{equation}
 where 
 
 * $library.size$, the total sum of counts across genes, is recommended including as a role of the normalization factor of the scRNA-seq counts. 
 * $covariates$, e.g., age, gender, batch effects, or principal components, can be included as fixed effects to adjust for unwanted variability, if appropriate.
-* $cell.type$ is used to adjust the cell-type effect.
-* $cell.type:treatment$ represents the treatment effect in a specific cell-type. 
+* $cell.type$ is used to adjust the cell type effect.
+* $cell.type:treatment$ represents the treatment effect in a specific cell type. 
 
-**Design matrix for random effects**:
-In multi-subject single-cell studies, cells are nested within subjects, and subjects are often nested within experimental conditions, meaning that cells from the same subject are correlated, and subjects within the same condition share common sources of variation. To account for this hierarchical structure, the mixed models treat the subjects (samples) as random effects, efficiently capturing both within-subject correlation and between-subject variability. In many scRNA-seq studies, samples are perfectly confounded with experimental conditions. In such cases, including subjects as a fixed effect may introduce collinearity, especially when the number of subjects is large. 
+**Random effects**:
+In multi-subject single-cell studies, cells are nested within subjects, and subjects are often nested within experimental conditions, meaning that cells from the same subject are correlated, and subjects within the same condition share common sources of variation. To account for this hierarchical structure, the mixed models treat the subjects (samples) as random effects, efficiently capturing both within-subject correlation and between-subject variability. In many scRNA-seq studies, samples are perfectly confounded with experimental conditions. In such cases, including subjects as a fixed effect may introduce collinearity. 
 
-The design matrix for the single-component random effects can be created by
+The single-component random effects can be specified by 
 \begin{equation}\label{randomeff1}
-Z = model.matrix(\sim 0 + subject)
+\begin{array}{l}
+random = \sim 0 + subject,\\
+Z = model.matrix(random),
+\end{array}
 \end{equation}
-with a dimension $d = ncol(Z)$. If appropriate, for example, we also take account of the measurement time as a random effect within a subject, we may consider the two-component random effects with design matrix given by
+with a dimension $d = ncol(Z)$. 
+
+If appropriate, for example, we also take account of the measurement locations as a random effect, we may consider the LMM with two-component random effects specified by
 \begin{equation}\label{randomeff2}
-Z = model.matrix(\sim 0 + subject + subject:time)
+\begin{array}{l}
+randomS = \sim 0 + subject,\\
+randomL = \sim 0 + location,\\
+Z_1 = model.matrix(randomS),\\
+Z_2 = model.matrix(randomL),\\
+Z = [Z_1,~Z_2],
+\end{array}
 \end{equation}
-with dimensions $d = c(ncol(Z)/2, ncol(Z)/2)$, a 2-vector, where $ncol(Z)/2$ equals to the number of subjects.
+with two dimensions $d = (ncol(Z_1), ncol(Z_2))$.
+
 
 ```{r Expression matrix, echo = TRUE, message = FALSE, tidy = TRUE, tidy.opts = list(width.cutoff = 90)}
 
 ##Gene expression matrix, Y = log2(1 + counts)
 Y <- log2(1 + dat$counts)
 
-dat$counts <- NULL #releasing memory
+##Since the simulated data contains no covariates other than libsize (library size) and cls (clsters or cell types), the fixed effects are specified as follows. 
+fixed <- ~ 0 + log(libsize) + cls + cls:trt
+X <- model.matrix(fixed, data = dat$metadata)
 
-##Since the simulated data contains no covariates other than libsize (library size) and cls (clsters or cell types), the design matrix for fixed effects is given as follows. 
-X <- model.matrix(~ 0 + log(libsize) + cls + cls:trt, data = dat$metadata)
+##The single-component random effects are specified by
+randomS <- ~ 0 + as.factor(sam)
+Z1 <- model.matrix(randomS, data = dat$metadata)
 
-##Note that the samples in the simulated data are nested in one treatment A or B. Design matrix for single-component random effects is given by
-Z <- model.matrix(~ 0 + as.factor(sam), data = dat$metadata)
-d <- ncol(Z)
-
-##Suppose the data contains different measurement time points within a sample, denoted as 'time', which are randomly generated. To account for the variability of the time within a sample, we may use the two-component random effects design matrix: 
+##Two-component random effects: Suppose the data contains different measurement locations within a sample, denoted as 'location', which are randomly generated. To account for the variability of the locations, we may use the LMM with two-component random effects described below. 
 set.seed(250801)
-n <- nrow(X)
-dat$metadata$time <- runif(n, 1, 1.5)*sample(1:2, n, replace = TRUE)
-Za <- model.matrix(~ 0 + sam + sam:time, data = dat$metadata)
-da <- c(ncol(Za)/2, ncol(Za)/2) #dimension
-range(Za[, 1:d] - Z) #identical to the single-component design
+dat$metadata$location <- sample(LETTERS[1:20], nrow(X), replace = TRUE)
+randomL <- ~ 0 + location
+Z2 <- model.matrix(randomL, data = dat$metadata)
+#Za <- cbind(Z, Z2) #two-component random-effects design matrix
+#da <- c(ncol(Z), ncol(Z2)) #dimension
 
-rm(dat) #releasing memory
 ```
 
 ### LMM fitting {#LMMfit}
 
-We use either *lmm* or *lmmfit* function to fit LMMs. With the cell-level data matrices $Y$, $X$ and $Z$, the LMMs can be fit by
-$$lmmfit(Y, X, Z, d = d),$$
+Given the cell-level transformed expression profile matrix $Y$, fixed-effects formula ($fixed$), random-effects formula ($random$), and the metadata ($metadata$), the LMMs can be fit by
+$$
+fit = flashmm(Y, fixed, random, metadata, is.counts = FALSE).
+$$
+
+With the cell-level data matrices $Y$, $X$ and $Z$, the LMMs can be fit by
+$$fit = lmmfit(Y, X, Z, d = d),$$
 where $d$ is a vector of the numbers of random-effects in different components. For $K$ components of random-effects, $d = (q_1, \ldots, q_K)$, where $q_k$ is the number of columns of the design matrix $Z_k$ for the $k$-th random-effect component. 
 
-The *lmmfit* function has high memory usage. For extremely large-scale data, it is recommended to pre-compute and store the summary-level data: $XX$, $XY$, $ZX$, $ZY$, $ZZ$, and $Ynorm$, defined in \eqref{eq:sdata}, and then use the *lmm* function to fit the LMMs as follows:
-$$lmm(XX, XY, ZX, ZY, ZZ, Ynorm = Ynorm, n = n, d = d).$$
-The summary-level data doesn't depend on the sample size $n$. This makes *lmm* memory-efficient. By default, the *lmm* and *lmmfit* functions use the restricted maximum likelihood (REML) method (method = 'REML'). To fit the LMM using maximum likelihood (ML), set method = 'ML'.
+The *lmmfit* and *flashmm* functions have high memory usage. For extremely large-scale data, it is recommended to pre-compute and store the summary-level data: $XX$, $XY$, $ZX$, $ZY$, $ZZ$, and $Ynorm$, defined in \eqref{eq:sdata}, and then use the *lmm* function to fit the LMMs as follows:
+$$fit = lmm(XX, XY, ZX, ZY, ZZ, Ynorm = Ynorm, n = n, d = d).$$
+The summary-level data doesn't depend on the sample size $n$. This makes *lmm* memory-efficient. By default, these functions use the restricted maximum likelihood (REML) method (method = 'REML'). To fit the LMM using maximum likelihood (ML), set method = 'ML'.
 
 ```{r LMM fitting, echo = TRUE, message = FALSE, warning = FALSE}
-
-##Option 1: Fit LMM based on cell-level data.
-max.iter <- 100
-epsilon <- 1e-5
-
 ##Fit the LMM with one-component random effects.
-fit1 <- lmmfit(Y, X, Z, d = d, max.iter = max.iter, epsilon = epsilon)
 
-##Fit the LMM with two-component random effects.
-fit2 <- lmmfit(Y, X, Za, d = da, max.iter = max.iter, epsilon = epsilon)
+##Option 1: Fit the LMM using model formulas based on cell-level data.
+fit1 <- flashmm(Y, fixed, random = randomS, metadata = dat$metadata, is.counts = FALSE)
+names(fit1)
 
-##Option 2: Fit LMM based on summary-level data.
-##(1) Compute the summary-level data.
-n <- nrow(X)
-XX <- t(X)%*%X
-XY <- t(Y%*%X)
-ZX <- t(Z)%*%X
-ZY <- t(Y%*%Z)
-ZZ <- t(Z)%*%Z
-Ynorm <- rowSums(Y*Y)
+##Option 2: Fit the LMM using model design matrices based on cell-level data.
+fit2 <- lmmfit(Y, X, Z = Z1, d = ncol(Z1))
+identical(fit1, fit2)
 
-##The summary-level data can also be computed by sslmm function:
-ss <- sslmm(X, Y, Z)
-
+##Option 3: Fit the LMM based on summary-level data.
+##Step 1: computing the summary-level data
+#n <- nrow(X); XX <- t(X)%*%X; XY <- t(Y%*%X)
+#ZX <- t(Z)%*%X; ZY <- t(Y%*%Z); ZZ <- t(Z)%*%Z
+#Ynorm <- rowSums(Y*Y)
+##or computed by sslmm function:
+ss <- sslmm(X, Y, Z = Z1)
 XX <- ss$XX; XY <- ss$XY
 ZX <- ss$ZX; ZY <- ss$ZY; ZZ <- ss$ZZ
 n <- ss$n; Ynorm <- ss$Ynorm
+d1 <- ncol(Z1)
 
-rm(X, Y, Z, Za) #releasing memory.
+##Step 2: fitting the LMM using lmm function
+fit3 <- lmm(XX, XY, ZX, ZY, ZZ, Ynorm = Ynorm, n = n, d = d1)
+identical(fit2, fit3) 
 
-##(2) Fit LMM using lmm function.
-fitss <- lmm(XX, XY, ZX, ZY, ZZ, Ynorm = Ynorm, n = n, d = d, 
-             max.iter = max.iter, epsilon = epsilon)
+##Fit the LMM with two-component random effects.
+fit2 <- flashmm(Y, fixed, random = list(randomS, randomL), metadata = dat$metadata)
+fit3 <- lmmfit(Y, X, Z = cbind(Z1, Z2), d = c(ncol(Z1), ncol(Z2)))
 
-##The two LMM fits are identical.
-identical(fit1, fitss) 
+identical(fit2, fit3)
 
-rm(fitss)
-str(fit1)
 ```
 
 The outputs from LMM fitting contain:
@@ -267,12 +261,15 @@ The outputs from LMM fitting contain:
 * estimates of LMM parameters (coefficients and variance components), standard errors of the estimates;
 * covariance matrix of the coefficients (fixed effects), and t-values and p-values for the hypothesis testing on the coefficients;
 * maximum log-likelihood, the number of iterations, and the first partial derivatives of the log likelihood.
+* Fisher information matrices (FIM) for fixed effects (FIM.beta) and variance components (FIM.theta) if output.FIM = TRUE.
 
-**Convergence of LMM fitting**: The LMM fitting is considered converged if the absolute values of first partial derivatives of the log-likelihood are smaller than the convergence tolerance (*epsilon*), specified in the *lmm* and *lmmfit* functions; otherwise, the fitting does not converge. The genes for which LMM fitting doesn't converge should be excluded in the subsequent analysis because the estimated coefficients for these genes are not reliable.
+
+**Convergence of LMM fitting**: The LMM fitting is considered converged if the absolute values of first partial derivatives of the log-likelihood are smaller than the given convergence tolerance (*epsilon*); otherwise, the fitting does not converge. The genes for which LMM fitting doesn't converge should be excluded in the subsequent analysis because the estimated coefficients for these genes are not reliable.
 
 ```{r, echo = TRUE, message = FALSE, warning = FALSE}
 ##Check the genes for which LMM fitting converges.
-convg <- (apply(abs(fit1$dlogL), 2, max) < epsilon) 
+fit1$epsilon
+convg <- (apply(abs(fit1$dlogL), 2, max) < fit1$epsilon) 
 sum(convg) 
 ```
 
@@ -294,11 +291,11 @@ fit1$coef[, 1:4]
 #fit1$p[, 1:4]
 ```
 
-**Differentially expressed (DE) genes**: The coefficients of the interaction term cls$\ast$:trtB represent the effects of treatment B versus A in a cell-type (cls$\ast$). The DE genes between two treatments in a cell-type can be identified based on the false discovery rate (FDR) or family-wise error rate (Bonferroni correction). Additionally, we may exclude genes with small coefficients (effect size or log-fold change).
+**Differentially expressed (DE) genes**: The coefficients of the interaction term cls$\ast$:trtB represent the effects of treatment B versus A in a cell type (cls$\ast$). The DE genes between two treatments in a cell type can be identified based on the false discovery rate (FDR) or family-wise error rate (Bonferroni correction). Additionally, we may exclude genes with small coefficients (effect size or log-fold change).
 
 ```{r, echo = TRUE, message = FALSE, warning = FALSE}
-##The DE genes specific to a cell-type
-##Coefficients, t-values, and p-values for the genes specific to a cell-type.
+##The DE genes specific to a cell type
+##Coefficients, t-values, and p-values for the genes specific to a cell type.
 index <- grep(":", rownames(fit1$coef))
 ce <- fit1$coef[index, ]
 tv <- fit1$t[index, ]
@@ -320,7 +317,7 @@ out[(out$FDR < 0.05) & (abs(out$coef) > 0.5) , ]
 ```
 
 **Using contrast**:
-We can make a comparison of the treatment B versus A across cell-types via the contrast that sums the treatment effects across cell-types as follows.
+We can make a comparison of the treatment B versus A across cell types via the contrast that sums the treatment effects across cell types as follows.
 
 ```{r}
 ##Construct the contrast.
@@ -367,7 +364,7 @@ sum(p < 0.05/length(p)) #Bonferroni correction
 
 **Testing of variance component in the LMM with two-component random effects**
 
-As described in [LMM design Section](#LMMdesign), the LMM with two-component random effects has two variance components, the first one for random effects of subjects and the second one for random effects of measurement times within a subject. Since the simulated data was generated by the LMM with one-component random effects (i.e., subjects), the second variance component should be zero. Next we use both z-statistic \eqref{zvarcomp} and LRT statistic \eqref{lrtvarcomp} to test the second variance component of the random effects. Note that 'fit2' is the output of fitting the LMM with two-component random effects using *lmmfit* function, see [LMM fitting Section](#LMMfit).
+As described in [LMM design Section](#LMMdesign), the LMM with two-component random effects has two variance components, the first one for random effects of subjects and the second one for random effects of measurement locations within a subject. Since the simulated data was generated by the LMM with one-component random effects (i.e., subjects), the second variance component should be zero. Next we use both z-statistic \eqref{zvarcomp} and LRT statistic \eqref{lrtvarcomp} to test the second variance component of the random effects. Note that 'fit2' is the output of fitting the LMM with two-component random effects, see [LMM fitting Section](#LMMfit).
 
 ```{r}
 ##(1) z-test for testing the second variance component
@@ -399,15 +396,14 @@ abline(0, 1, col = "gray")
 
 ### Using ML method
 
-To use the maximum likelihood (ML) method to fit the LMM, set method = ‘ML’ in the *lmm* and *lmmfit* functions.
+To use the maximum likelihood (ML) method to fit the LMM, set method = ‘ML’ in the *lmm*, *lmmfit*, and *flashmm* functions.
 
 ```{r LMM_ML, echo = TRUE, message = FALSE, warning = FALSE}
 ##Fitting LMM using ML method
-#fit3 <- lmmfit(Y, X, Z, d = d, method = "ML", max.iter = max.iter, epsilon = epsilon)
-fit3 <- lmm(XX, XY, ZX, ZY, ZZ, Ynorm = Ynorm, n = n, d = d, method = "ML",
-             max.iter = max.iter, epsilon = epsilon)
+#fit3 <- lmmfit(Y, X, Z, d = d1, method = "ML")
+fit3 <- lmm(XX, XY, ZX, ZY, ZZ, Ynorm = Ynorm, n = n, d = d1, method = "ML")
 
-##The DE genes specific to a cell-type
+##The DE genes specific to a cell type
 ##Coefficients, t-values, and p-values
 index <- grep(":", rownames(fit3$coef))
 ce <- fit3$coef[index, ]
@@ -443,7 +439,7 @@ Estimating the variance components by either ML or REML is a numerical optimizat
 \begin{equation}\label{eq:gradient}
 \theta^{(i+1)} = \theta^{(i)} + \Gamma(\theta^{(i)})\frac{\partial l(\theta^{(i)})}{\partial\theta},
 \end{equation}
-where $\partial l(\theta)/\partial\theta$ is the gradient of the log likelihood function, and $\Gamma(\theta)$ is a modifier matrix of the gradient direction, which can be specified by Newton–Raphson, Fisher scoring or average information. The Newton-Raphson method uses the inverse of the negative Hessian matrix (observed Fisher information) as a modifier, while the Fisher scoring method uses the inverse of Fisher information matrix (the expectation of negative Hessian matrix). The average information method uses the inverse of the average of the negative Hessian matrix and its expectation. See the Supplementary Material in @Xu2025 for details. The Fisher scoring method is more stable than others because the negative Hessian matrix may not be positive definite but its expectation is positive definite. 
+where $\partial l(\theta)/\partial\theta$ is the gradient of the log likelihood function, and $\Gamma(\theta)$ is a modifier matrix of the gradient direction, which can be specified by Newton–Raphson, Fisher scoring or average information. The Newton-Raphson method uses the inverse of the negative Hessian matrix (observed Fisher information) as a modifier, while the Fisher scoring method uses the inverse of Fisher information matrix (the expectation of negative Hessian matrix). The average information method uses the inverse of the average of the negative Hessian matrix and its expectation. See the Supplementary Material in @Xu2026 for details. The Fisher scoring method is more stable than others because the negative Hessian matrix may not be positive definite but its expectation is positive definite. 
 
 
 ## Hypothesis testing
@@ -485,7 +481,7 @@ an asymptotic $\chi^2$ distribution, where $r$ is the number of zero variance co
   
 Building design matrices for fixed and random effects is a key step in LMM-based differential expression analysis. Including library size, a normalization factor for scRNA-seq, as a fixed effect can help reduce p-value inflation. If necessary, we can add principal components as fixed effects to further mitigate unknown technical effects.
 
-In differential expression analysis, modeling samples (subjects) as random effects accounts for between-sample variability and within-sample correlation. If samples have different effects on gene expression, we can also model them as fixed effects. However, this can lead to overfitting when the number of samples (subjects) is large. For scRNA-seq data, this may also result in collinearity when the samples are nested within an experimental condition.
+In differential expression analysis, modeling samples (subjects) as random effects accounts for between-sample variability and within-sample correlation. If samples have different effects on gene expression, we can also model them as fixed effects. However, this can lead to the random-effects design matrix linearly depends on the fixed-effects design matrix. In this case, the LMM cannot be fit by REML method. Moreover, this can also result in overfitting when the number of samples (subjects) is large and collinearity when the samples are nested within an experimental condition.
 
 # Session info {- .smaller}
 

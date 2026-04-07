@@ -13,12 +13,15 @@ lmm(
   Ynorm,
   n,
   d = ncol(ZZ),
-  theta0 = NULL,
   method = c("REML", "ML"),
+  theta0 = NULL,
   max.iter = 50,
   epsilon = 1e-05,
   output.cov = TRUE,
-  output.RE = FALSE
+  output.FIM = FALSE,
+  output.RE = FALSE,
+  output.SS = FALSE,
+  verbose = FALSE
 )
 }
 \arguments{
@@ -26,47 +29,58 @@ lmm(
 
 \item{XY}{= t(Y\%*\%X), where Y is a features-by-samples matrix of observed responses (genes-by-cells expression matrix for scRNA-seq).}
 
-\item{ZX}{= t(Z)\%*\%X, where Z = [Z1, ..., Zk], a design matrix for k random factors (variables or random components).}
+\item{ZX}{= t(Z)\%*\%X, where Z = [Z1, ..., Zk] is a design matrix for k random components (factors).}
 
 \item{ZY}{= t(Y\%*\%Z).}
 
 \item{ZZ}{= t(Z)\%*\%Z.}
 
-\item{Ynorm}{= rowSums(Y*Y), norms for features (each row in Y).}
+\item{Ynorm}{= rowSums(Y*Y), norms for features (each row).}
 
 \item{n}{= nrow(X), number of samples (cells in scRNA-seq).}
 
-\item{d}{= (d1,...,dk), where di = ncol(Zi), number of columns in Zi. sum(d) = ncol(Z), number of columns in Z. For the model with only one random factor, d = ncol(Z).}
+\item{d}{= (d1,...,dk), where di = ncol(Zi), the number of columns in Zi. sum(d) = ncol(Z), the number of columns in Z. For the model with only one random component, d = ncol(Z).}
 
-\item{theta0}{A vector of initial values of the variance components, (s1, ...,sk, s_(k+1)), si = sigma_i^2, the variance component of the i-th type random effects. s_(k+1) = sigma^2, the variance component of model residual error.}
+\item{method}{a character string, either "REML" or "ML". Defaults to "REML". If ‘REML’, the model is fit using REML; otherwise, using ML.}
 
-\item{method}{Either REML or ML with Fisher scoring (FS) iterative algorithm.}
+\item{theta0}{a vector of initial values of the variance components, (s1, ...,sk, s_(k+1)), si = sigma_i^2, the i-th variance component. s_(k+1) = sigma^2, the variance component of model residual error.}
 
-\item{max.iter}{The maximal number of iterations for the iterative algorithm.}
+\item{max.iter}{the maximal number of iterations for the iterative algorithm.}
 
-\item{epsilon}{Positive convergence tolerance. If the absolute value of the first partial derivative of log likelihood is less than epsilon, the iterations converge.}
+\item{epsilon}{positive convergence tolerance. If the absolute value of the first partial derivative of log likelihood is less than epsilon, the iterations converge.}
 
-\item{output.cov}{If TRUE, output the covariance matrices for the estimated coefficients, which are needed for testing contrasts.}
+\item{output.cov}{a logical scalar. If TRUE, output an array of the covariance matrices for the estimated coefficients, cov.beta.}
 
-\item{output.RE}{If TRUE, output the best linear unbiased prediction (BLUP) of the random effects.}
+\item{output.FIM}{a logical scalar. If TRUE, output an array of the Fisher information matrices (FIM) for fixed effects, FIM.beta[,,i] = \eqn{X^T(Cov(Y[i,])^{-1}X} for the i-th feature, and variance components, FIM.theta[,,i] = \eqn{Var(\partial(logL_i)/\partial(theta)) = - E[\partial^2(logL_i)/{\partial(theta)\partial(theta^T)}]} for the i-th feature.}
+
+\item{output.RE}{a logical scalar. If TRUE, output the best linear unbiased prediction (BLUP) of the random effects.}
+
+\item{output.SS}{a logical scalar. If TURE, output list(XX, XY, ZX, ZY, ZZ, Ynorm, n), a list of the summary-level data (summary statistics), which can also be computed using the sslmm function.}
+
+\item{verbose}{a logical scalar. If TRUE, print the number of features for which LMM fitting did not converge (abs(dlogL) > epsilon).}
 }
 \value{
 A list containing the following components:
-   \item{dlogL}{First partial derivatives of log-likelihoods for each feature.}
-   \item{logLik}{Maximum log-likelihoods for ML method or maximum log-restricted-likelihood for REML method.}
-   \item{niter}{Numbers of iterations for each feature.}
-   \item{coef}{A matrix of estimated coefficients (fixed effects), each column corresponds to a feature and each row one covariate.}
-   \item{se}{A matrix of standard errors of the estimated coefficients.}
-   \item{t}{A matrix of t-values for the fixed effects, equal to coef/se.}
-   \item{df}{Degrees of freedom for the t-statistics (values).}
-   \item{p}{A matrix of two-sided p-values for the t-tests of the fixed effects.}
-   \item{cov}{A array of covariance matrices of the estimated coefficients (fixed effects).}
-   \item{theta}{A matrix of the estimated variance components, each column corresponds to a feature and each row one variance component. The last row is the variance component of the residual error.}
-   \item{se.theta}{Standard errors of the estimated theta.}
-   \item{RE}{A matrix of the best linear unbiased prediction (BLUP) of random effects.}
+   \item{method}{the method, either REML or ML, for estimating the LMM parameters (fixed effects and variance components).}
+   \item{epsilon}{convergence tolerance.}
+   \item{dlogL}{first partial derivatives of log-likelihoods for each feature.}
+   \item{logLik}{maximum log-likelihoods for ML method or maximum log-restricted-likelihood for REML method.}
+   \item{niter}{numbers of iterations for each feature.}
+   \item{coef}{a matrix of estimated coefficients (fixed effects or beta), each column corresponds to a feature and each row one covariate.}
+   \item{se}{a matrix of standard errors of the estimated coefficients.}
+   \item{t}{a matrix of t-values for the fixed effects, equal to coef/se.}
+   \item{p}{a matrix of two-sided p-values for the t-tests of the fixed effects.}
+   \item{df}{degrees of freedom for the t-statistics (values).}
+   \item{cov}{a array of covariance matrices of the estimated coefficients (fixed effects).}
+   \item{theta}{a matrix of the estimated variance components, each column corresponds to a feature and each row one variance component. The last row is the variance component of the residual error.}
+   \item{se.theta}{standard errors of the estimated theta.}
+  \item{FIM.beta}{the Fisher information matrices (FIM) for fixed effects.}
+  \item{FIM.theta}{the Fisher information matrices (FIM) for variance components.}
+   \item{RE}{a matrix of the best linear unbiased prediction (BLUP) of random effects.}
+   \item{summary_data}{a list of the summary-level data (summary statistics).}
 }
 \description{
-lmm is used to fit linear mixed-effects models (LMM) based on summary-level data. The LMM parameters are estimated by either restricted maximum likelihood (REML) or maximum likelihood (ML) method with Fisher scoring (FS) gradient descent algorithm.
+lmm is used to fit a linear mixed-effects model (LMM) based on summary-level data. The LMM parameters are estimated by either restricted maximum likelihood (REML) or maximum likelihood (ML) method with Fisher scoring (FS) gradient descent algorithm.
 }
 \examples{
 #Generate data: X, Y, and Z.
