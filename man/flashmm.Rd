@@ -31,7 +31,7 @@ flashmm(
 
 \item{metadata}{a data frame containing the variables named in fixed and random.}
 
-\item{is.counts}{a logical scalar indicating whether Y is a matrix of raw counts or processed values (e.g., log-transformed or normalized). If Y contains raw counts, it will be log-transformed as log₂(1 + Y).}
+\item{is.counts}{a logical scalar indicating whether Y is a matrix of raw counts or processed values (e.g., log-transformed or normalized). If Y contains raw counts, it will be log-transformed as log2(1 + Y).}
 
 \item{method}{a character string, either "REML" or "ML". Defaults to "REML". If ‘REML’, the model is fit using REML; otherwise, using ML.}
 

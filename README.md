@@ -55,8 +55,7 @@ devtools::install_github("https://github.com/Baderlab/FLASHMM")
 
 This basic example shows how to use FLASHMM for analyzing single-cell
 differential expression. See [the package
-vignette](https://cran.r-project.org/web/packages/FLASHMM/vignettes/FLASHMM-vignette.html)
-for details.
+vignette](https://cran.r-project.org/package=FLASHMM) for details.
 
 ``` r
 library(FLASHMM)

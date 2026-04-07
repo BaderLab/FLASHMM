@@ -6,7 +6,7 @@
 #' @param fixed a one-sided model formula used to create the fixed-effects design matrix by model.matrix function.
 #' @param random a one-sided formula specifying a model with a single random-effects component or a list of one-sided formulas specifying multiple random-effects components, used to create the random-effects design matrix.
 #' @param metadata a data frame containing the variables named in fixed and random.
-#' @param is.counts a logical scalar indicating whether Y is a matrix of raw counts or processed values (e.g., log-transformed or normalized). If Y contains raw counts, it will be log-transformed as log₂(1 + Y).
+#' @param is.counts a logical scalar indicating whether Y is a matrix of raw counts or processed values (e.g., log-transformed or normalized). If Y contains raw counts, it will be log-transformed as log2(1 + Y).
 #' @param method a character string, either "REML" or "ML". Defaults to "REML". If ‘REML’, the model is fit using REML; otherwise, using ML.
 #' @param nBlocks the number of blocks into which large datasets are subdivided to reduce memory usage when computing summary statistics. The default value, nBlocks = ceiling((ncol(Y) * 1e-08) * nrow(Y)), may not be adequate. If encountering the error: vector memory limit reached, you should increase the nBlocks value to avoid the issue.
 #' @param theta0 a vector of initial values of the variance components, (s1, ...,sk, s_(k+1)), si = sigma_i^2, the i-th variance component. s_(k+1) = sigma^2, the variance component of model residual error.
