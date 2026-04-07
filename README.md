@@ -7,8 +7,8 @@
 <!-- badges: end -->
 
 FLASH-MM is a method (package name: FLASHMM) for analysis of single-cell
-differential expression using a linear mixed-effects model (LMM). The
-mixed-effects model is a powerful tool in single-cell studies due to
+differential expression using a linear mixed-effects model (LMM) [^1].
+The mixed-effects model is a powerful tool in single-cell studies due to
 their ability to model intra-subject correlation and inter-subject
 variability.
 
@@ -90,12 +90,9 @@ hypothesis testing.
 
 **1. Model design**
 
-- X: design matrix for fixed effects
-- Z: design matrix for random effects
-
 ``` r
-##Log-transformed counts: gene expression profile
-Y <- log(dat$counts + 1) 
+##Gene expression profile: log-transformed counts
+Y <- log2(dat$counts + 1) 
 
 ##Fixed effects
 fixed <- ~ 0 + log(libsize) + cls + cls:trt
@@ -121,7 +118,7 @@ data.
 ``` r
 fit2 <- lmmfit(Y, X, Z, d = d)
 identical(fit1, fit2)
-#> [1] FALSE
+#> [1] TRUE
 ```
 
 **Option 3**: Fit LMMs based on summary-level data.
@@ -235,7 +232,7 @@ two-component random effects.
 ## measurement locations within a sample, denoted as 'location', which are
 ## randomly generated.
 set.seed(2508)
-dat$metadata$location <- sample(LETTERS[1:20], nrow(X), replace = TRUE)
+dat$metadata$location <- sample(LETTERS[1:25], nrow(X), replace = TRUE)
 randomL <- ~0 + location
 Zl <- model.matrix(randomL, data = dat$metadata)
 d <- c(ncol(Z), ncol(Zl))
@@ -323,7 +320,7 @@ sessionInfo()
 
 If you find FLASH-MM useful for your publication, please cite:
 
-Xu & Pouyabahar et al., FLASH-MM: fast and scalable single-cell
-differential expression analysis using linear mixed-effects models,
-bioRxiv 2025.04.08.647860; doi:
-<https://doi.org/10.1101/2025.04.08.647860>
+[^1]: Xu, C., Pouyabahar, D., Voisin, V. et al. FLASH-MM: fast and
+    scalable single-cell differential expression analysis using linear
+    mixed-effects models. Nat Commun 17, 2384 (2026).
+    <https://doi.org/10.1038/s41467-026-69063-2>
