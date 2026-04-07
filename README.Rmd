@@ -20,14 +20,15 @@ knitr::opts_chunk$set(
 
 FLASH-MM is a method (package name: FLASHMM) for analysis of single-cell differential expression using a linear mixed-effects model (LMM). The mixed-effects model is a powerful tool in single-cell studies due to their ability to model intra-subject correlation and inter-subject variability.
 
-The FLASHMM package provides two functions for fitting LMMs: *lmm* and *lmmfit*. The *lmm* function takes summary statistics as input, whereas *lmmfit* is a wrapper around *lmm* that directly processes cell-level data and computes the summary statistics internally. While *lmmfit* is easier to use, it has the limitation of higher memory consumption. For extremely large scale data, it is recommended to precompute and store the summary statistics and then use *lmm* function to fit LMMs.
+The FLASHMM package provides three functions: *lmm*, *lmmfit*, and *flashmm*, for fitting LMMs. The *lmm* function takes summary statistics as input, whereas *lmmfit* and *flashmm* are a wrapper around *lmm* that directly processes cell-level data and computes the summary statistics internally. The *lmmfit* takes the model design matrices as input. Instead the *flashmm* takes the model formulas as input, where the design matrices are generated internally. While *lmmfit* and *flashmm* are easier to use, they have the limitation of higher memory consumption. For extremely large scale data, we can precompute the summary-level data by \eqref{eq:sdata}, and then use *lmm* function to fit LMMs. FLASHMM provides *lmmtest* function to perform statistical test on the fixed effects and the contrasts of the fixed effects. 
 
 In summary, FLASHMM package provides the following main functions.
 
 * *lmm*: fit LMM using summary-level data.
-* *lmmfit*: fit LMM using cell-level data.
+* *lmmfit*: fit LMM using model design matrices based on cell-level data.
+* *flashmm*: fit LMM using model formulas based on cell-level data.
 * *lmmtest*: perform statistical tests on the fixed effects and their contrasts.
-* *contrast.matrix*: construct contrast matrix of the fixed effects for various comparisons.
+* *contrast.matrix*: construct a contrast matrix of the fixed effects for various comparisons.
 * *simuRNAseq*: simulate multi-sample multi-cell-type scRNA-seq data.
 
 
@@ -47,7 +48,7 @@ devtools::install_github("https://github.com/Baderlab/FLASHMM")
 
 ## Example
 
-This basic example shows how to use FLASHMM for analyzing single-cell differential expression. See the package vignette for details: https://cran.r-project.org/web/packages/FLASHMM/vignettes/FLASHMM-vignette.html.
+This basic example shows how to use FLASHMM for analyzing single-cell differential expression. See [the package vignette](https://cran.r-project.org/web/packages/FLASHMM/vignettes/FLASHMM-vignette.html) for details.
 
 ```{r}
 library(FLASHMM)

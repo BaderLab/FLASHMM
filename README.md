@@ -12,22 +12,29 @@ mixed-effects model is a powerful tool in single-cell studies due to
 their ability to model intra-subject correlation and inter-subject
 variability.
 
-The FLASHMM package provides two functions for fitting LMMs: *lmm* and
-*lmmfit*. The *lmm* function takes summary statistics as input, whereas
-*lmmfit* is a wrapper around *lmm* that directly processes cell-level
-data and computes the summary statistics internally. While *lmmfit* is
-easier to use, it has the limitation of higher memory consumption. For
-extremely large scale data, it is recommended to precompute and store
-the summary statistics and then use *lmm* function to fit LMMs.
+The FLASHMM package provides three functions: *lmm*, *lmmfit*, and
+*flashmm*, for fitting LMMs. The *lmm* function takes summary statistics
+as input, whereas *lmmfit* and *flashmm* are a wrapper around *lmm* that
+directly processes cell-level data and computes the summary statistics
+internally. The *lmmfit* takes the model design matrices as input.
+Instead the *flashmm* takes the model formulas as input, where the
+design matrices are generated internally. While *lmmfit* and *flashmm*
+are easier to use, they have the limitation of higher memory
+consumption. For extremely large scale data, we can precompute the
+summary-level data by , and then use *lmm* function to fit LMMs. FLASHMM
+provides *lmmtest* function to perform statistical test on the fixed
+effects and the contrasts of the fixed effects.
 
 In summary, FLASHMM package provides the following main functions.
 
 - *lmm*: fit LMM using summary-level data.
-- *lmmfit*: fit LMM using cell-level data.
+- *lmmfit*: fit LMM using model design matrices based on cell-level
+  data.
+- *flashmm*: fit LMM using model formulas based on cell-level data.
 - *lmmtest*: perform statistical tests on the fixed effects and their
   contrasts.
-- *contrast.matrix*: construct contrast matrix of the fixed effects for
-  various comparisons.
+- *contrast.matrix*: construct a contrast matrix of the fixed effects
+  for various comparisons.
 - *simuRNAseq*: simulate multi-sample multi-cell-type scRNA-seq data.
 
 ## Installation
@@ -47,8 +54,9 @@ devtools::install_github("https://github.com/Baderlab/FLASHMM")
 ## Example
 
 This basic example shows how to use FLASHMM for analyzing single-cell
-differential expression. See the package vignette for details:
-<https://cran.r-project.org/web/packages/FLASHMM/vignettes/FLASHMM-vignette.html>.
+differential expression. See [the package
+vignette](https://cran.r-project.org/web/packages/FLASHMM/vignettes/FLASHMM-vignette.html)
+for details.
 
 ``` r
 library(FLASHMM)
@@ -273,14 +281,14 @@ qqplot(runif(length(p)), p, xlab = "Uniform quantile", ylab = "Z-test p-value", 
 abline(0, 1, col = "gray")
 ```
 
-<img src="man/figures/README-unnamed-chunk-12-1.png" width="100%" />
+<img src="man/figures/README-unnamed-chunk-12-1.png" alt="" width="100%" />
 
 ``` r
 qqplot(runif(length(pLRT)), pLRT, xlab = "Uniform quantile", ylab = "LRT p-value", col = "blue")
 abline(0, 1, col = "gray")
 ```
 
-<img src="man/figures/README-unnamed-chunk-12-2.png" width="100%" />
+<img src="man/figures/README-unnamed-chunk-12-2.png" alt="" width="100%" />
 
 ``` r
 sessionInfo()
@@ -305,19 +313,16 @@ sessionInfo()
 #> [1] FLASHMM_1.2.3
 #> 
 #> loaded via a namespace (and not attached):
-#>  [1] Matrix_1.7-3       miniUI_0.1.2       compiler_4.4.3     promises_1.3.3    
-#>  [5] Rcpp_1.1.0         callr_3.7.6        later_1.4.2        yaml_2.3.10       
-#>  [9] fastmap_1.2.0      lattice_0.22-7     mime_0.13          R6_2.6.1          
-#> [13] curl_6.4.0         knitr_1.50         MASS_7.3-65        htmlwidgets_1.6.4 
-#> [17] desc_1.4.3         profvis_0.4.0      shiny_1.11.1       rlang_1.1.6       
-#> [21] cachem_1.1.0       httpuv_1.6.16      xfun_0.52          fs_1.6.6          
-#> [25] pkgload_1.4.0      memoise_2.0.1      cli_3.6.5          formatR_1.14      
-#> [29] magrittr_2.0.3     ps_1.9.1           grid_4.4.3         processx_3.8.6    
-#> [33] digest_0.6.37      rstudioapi_0.17.1  xtable_1.8-4       remotes_2.5.0     
-#> [37] devtools_2.4.5     lifecycle_1.0.4    vctrs_0.6.5        evaluate_1.0.4    
-#> [41] glue_1.8.0         urlchecker_1.0.1   sessioninfo_1.2.3  pkgbuild_1.4.8    
-#> [45] rmarkdown_2.29     purrr_1.1.0        tools_4.4.3        usethis_3.1.0.9000
-#> [49] ellipsis_0.3.2     htmltools_0.5.8.1
+#>  [1] vctrs_0.7.1       cli_3.6.5         knitr_1.51        rlang_1.1.7      
+#>  [5] xfun_0.56         processx_3.8.6    otel_0.2.0        purrr_1.2.1      
+#>  [9] pkgload_1.4.1     glue_1.8.0        htmltools_0.5.9   ps_1.9.1         
+#> [13] pkgbuild_1.4.8    formatR_1.14      rmarkdown_2.30    grid_4.4.3       
+#> [17] evaluate_1.0.5    MASS_7.3-65       ellipsis_0.3.2    fastmap_1.2.0    
+#> [21] yaml_2.3.12       lifecycle_1.0.5   memoise_2.0.1     compiler_4.4.3   
+#> [25] fs_1.6.6          sessioninfo_1.2.3 rstudioapi_0.18.0 lattice_0.22-7   
+#> [29] digest_0.6.39     R6_2.6.1          curl_7.0.0        usethis_3.2.1    
+#> [33] callr_3.7.6       magrittr_2.0.4    Matrix_1.7-4      tools_4.4.3      
+#> [37] devtools_2.4.6    desc_1.4.3        cachem_1.1.0      remotes_2.5.0
 ```
 
 # Citation
