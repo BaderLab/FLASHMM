@@ -21,7 +21,7 @@ Instead the *flashmm* takes the model formulas as input, where the
 design matrices are generated internally. While *lmmfit* and *flashmm*
 are easier to use, they have the limitation of higher memory
 consumption. For extremely large scale data, we can precompute the
-summary-level data by , and then use *lmm* function to fit LMMs. FLASHMM
+summary-level data, and then use *lmm* function to fit LMMs. FLASHMM
 provides *lmmtest* function to perform statistical test on the fixed
 effects and the contrasts of the fixed effects.
 
@@ -65,7 +65,7 @@ library(FLASHMM)
 ### Simulating scRNA-seq dataset with *simuRNAseq*
 
 Simulate a multi-sample multi-cell-cluster scRNA-seq dataset that
-contains 25 samples and 4 clusters (cell-types) with 2 treatments.
+contains 25 samples and 4 clusters (cell types) with 2 treatments.
 
 ``` r
 set.seed(2412)
@@ -74,37 +74,13 @@ dat <- simuRNAseq(nGenes = 50, nCells = 1000, nsam = 25, ncls = 4, ntrt = 2, nDE
 names(dat)
 #> [1] "ref.mean.dispersion" "metadata"            "counts"             
 #> [4] "DEgenes"             "treatment"
-
-##counts and meta data
-counts <- dat$counts
-metadata <- dat$metadata
-head(metadata)
-#>       sam cls trt libsize
-#> Cell1  B1   4   B     117
-#> Cell2  A6   3   A      75
-#> Cell3  A2   1   A     101
-#> Cell4  B8   1   B      80
-#> Cell5 B11   4   B     123
-#> Cell6  A4   3   A     113
-
-##DE genes
-dat$DEgenes
-#>      gene       beta cluster
-#> 45 Gene45  0.5496463       1
-#> 46 Gene46  0.3652007       2
-#> 47 Gene47  0.8306937       3
-#> 48 Gene48 -0.9476624       3
-#> 49 Gene49 -0.8751216       3
-#> 50 Gene50  0.9050662       3
-
-rm(dat)
 ```
 
 The simulated data contains
 
 - *counts*: a genes-by-cells matrix of expression counts
-- *metadata*: a data frame consisting of samples (sam), cell-types (cls)
-  and treatments (trt).
+- *metadata*: consisting of samples (sam), cell-types (cls) and
+  treatments (trt).
 - *DEgenes*: differetially expressed (DE) genes.
 
 ### Differential expression analysis using LMM
@@ -114,38 +90,52 @@ hypothesis testing.
 
 **1. Model design**
 
-- Y: gene expression profile (log-transformed counts)
 - X: design matrix for fixed effects
 - Z: design matrix for random effects
 
 ``` r
-Y <- log(counts + 1) 
-X <- model.matrix(~ 0 + log(libsize) + cls + cls:trt, data = metadata)
-Z <- model.matrix(~ 0 + sam, data = metadata)
+##Log-transformed counts: gene expression profile
+Y <- log(dat$counts + 1) 
+
+##Fixed effects
+fixed <- ~ 0 + log(libsize) + cls + cls:trt
+X <- model.matrix(fixed, data = dat$metadata)
+
+##Random effects
+randomS <- ~ 0 + sam
+Z <- model.matrix(randomS, data = dat$metadata)
 d <- ncol(Z) 
 ```
 
 **2. LMM fitting**
 
-**Option 1**: Fit LMMs with *lmmfit* function using cell-level data.
+**Option 1**: Fit LMMs using model formulas based on cell-level data.
 
 ``` r
-fit <- lmmfit(Y, X, Z, d = d)
+fit1 <- flashmm(dat$counts, fixed, random = randomS, metadata = dat$meta, is.counts = TRUE)
 ```
 
-**Option 2**: Fit LMMs with *lmm* function using summary-level data.
+**Option 2**: Fit LMMs using model design matrices based on cell-level
+data.
 
 ``` r
-##(1) Computing summary statistics
-n <- nrow(X)
+fit2 <- lmmfit(Y, X, Z, d = d)
+identical(fit1, fit2)
+#> [1] FALSE
+```
+
+**Option 3**: Fit LMMs based on summary-level data.
+
+``` r
+##Step 1: computing summary statistics
+n <- nrow(X); d <- ncol(Z)
 XX <- t(X)%*%X; XY <- t(Y%*%X)
 ZX <- t(Z)%*%X; ZY <- t(Y%*%Z); ZZ <- t(Z)%*%Z
 Ynorm <- rowSums(Y*Y)
 
-##(2) Fitting LMMs
-fitss <- lmm(XX, XY, ZX, ZY, ZZ, Ynorm = Ynorm, n = n, d = d)
-
-identical(fit, fitss)
+##Step 2: fitting LMMs
+fit3 <- lmm(XX, XY, ZX, ZY, ZZ, Ynorm = Ynorm, n = n, d = d)
+identical(fit2, fit3)
 #> [1] TRUE
 ```
 
@@ -153,6 +143,7 @@ identical(fit, fitss)
 
 ``` r
 ## Testing coefficients (fixed effects)
+fit <- fit1
 test <- lmmtest(fit)
 # head(test) The t-value and p-values are identical with those provided in the
 # LMM fit.
@@ -166,17 +157,17 @@ fit$p[, 1:4]
 #> cls2         0.0095791682 7.060831e-07 0.0248727531 1.220264e-02
 #> cls3         0.0106867912 5.971329e-07 0.0319158551 9.862323e-03
 #> cls4         0.0145925607 6.556356e-07 0.0266262016 7.087769e-03
-#> cls1:trtB    0.3846324624 7.144869e-01 0.8795840262 3.319065e-01
-#> cls2:trtB    0.0387066712 2.726210e-01 0.9114719020 4.580478e-01
-#> cls3:trtB    0.1322220329 1.338870e-01 0.7144983040 3.745743e-01
-#> cls4:trtB    0.7442524470 9.307711e-02 0.6485383571 5.182577e-01
+#> cls1:trtB    0.3846324624 7.144869e-01 0.8795840264 3.319065e-01
+#> cls2:trtB    0.0387066712 2.726210e-01 0.9114719019 4.580478e-01
+#> cls3:trtB    0.1322220329 1.338870e-01 0.7144983039 3.745743e-01
+#> cls4:trtB    0.7442524470 9.307711e-02 0.6485383570 5.182577e-01
 
 # fit$coef[, 1:4]; fit$t[, 1:4]
 ```
 
 **Differentially expressed (DE) genes**: The coefficients of the
 interactions, cls*i* :trtB, represent the effects of treatment B versus
-A in a cell-type, cls*i*.
+A in a cell type, cls*i*.
 
 ``` r
 ##Coefficients, t-values, and p-values for the genes specific to a cell-type.
@@ -196,9 +187,9 @@ out$FDR <- p.adjust(out$p, method = "fdr")
 ##The DE genes with FDR < 0.05
 out[out$FDR < 0.05, ]
 #>       gene   cluster       coef         t            p          FDR
-#> 147 Gene47 cls3:trtB  0.7065409  5.971113 3.279879e-09 3.279879e-07
-#> 148 Gene48 cls3:trtB -0.5870280 -4.681093 3.250047e-06 2.166698e-04
-#> 150 Gene50 cls3:trtB  0.6918507  6.534829 1.017003e-10 2.034006e-08
+#> 147 Gene47 cls3:trtB  1.0193230  5.971113 3.279879e-09 3.279879e-07
+#> 148 Gene48 cls3:trtB -0.8469024 -4.681093 3.250047e-06 2.166698e-04
+#> 150 Gene50 cls3:trtB  0.9981295  6.534829 1.017003e-10 2.034006e-08
 ```
 
 **Using contrasts**: We can make comparisons using contrasts. For
@@ -213,12 +204,12 @@ ct[index] <- 1/length(index)
 test <- lmmtest(fit, contrast = ct)
 head(test)
 #>             _coef         _t        _p
-#> Gene1  0.09445436  1.4753256 0.1404426
-#> Gene2  0.10333114  1.4540794 0.1462409
-#> Gene3 -0.02117872 -0.2900354 0.7718498
-#> Gene4  0.10281315  0.9531558 0.3407436
-#> Gene5 -0.12106061 -1.3918602 0.1642770
-#> Gene6  0.06756558  1.1553425 0.2482287
+#> Gene1  0.13626884  1.4753256 0.1404426
+#> Gene2  0.14907532  1.4540794 0.1462409
+#> Gene3 -0.03055443 -0.2900354 0.7718498
+#> Gene4  0.14832802  0.9531558 0.3407436
+#> Gene5 -0.17465354 -1.3918602 0.1642770
+#> Gene6  0.09747653  1.1553425 0.2482287
 ```
 
 ## And More
@@ -226,7 +217,7 @@ head(test)
 ### Using ML method
 
 To use the maximum likelihood (ML) method to fit the LMM, set method =
-‘ML’ in the *lmm* and *lmmfit* functions.
+‘ML’.
 
 ``` r
 ##Fitting LMM using ML method
@@ -236,22 +227,25 @@ fit1 <- lmmfit(Y, X, Z, d = d, method = "ML")
 ### LMM with two-component random effects
 
 If appropriate, for example, we also take account of the measurement
-time as a random effect within a subject, we may fit data using the LMM
-with two-component random effects.
+locations as a random effect, we may fit data using the LMM with
+two-component random effects.
 
 ``` r
-## Design matrix for two-component random effects: Suppose the data contains
-## the measurement time points, denoted as 'time', which are randomly
-## generated.
-
+## Two-component random effects: Suppose the data contains different
+## measurement locations within a sample, denoted as 'location', which are
+## randomly generated.
 set.seed(2508)
-n <- nrow(metadata)
-metadata$time <- sample(1:2, n, replace = TRUE)
-Z <- model.matrix(~0 + sam + sam:time, data = metadata)
-d <- c(ncol(Z)/2, ncol(Z)/2)  #dimension
+dat$metadata$location <- sample(LETTERS[1:20], nrow(X), replace = TRUE)
+randomL <- ~0 + location
+Zl <- model.matrix(randomL, data = dat$metadata)
+d <- c(ncol(Z), ncol(Zl))
 
 ## Fit the LMM with two-component random effects.
-fit2 <- lmmfit(Y, X, Z, d = d, method = "ML")
+fit2 <- lmmfit(Y, X, Z = cbind(Z, Zl), d = d, method = "ML")
+fit3 <- flashmm(Y, fixed, random = list(randomS, randomL), metadata = dat$metadata,
+    method = "ML")
+identical(fit2, fit3)
+#> [1] TRUE
 ```
 
 ### Testing variance components
@@ -281,14 +275,14 @@ qqplot(runif(length(p)), p, xlab = "Uniform quantile", ylab = "Z-test p-value", 
 abline(0, 1, col = "gray")
 ```
 
-<img src="man/figures/README-unnamed-chunk-12-1.png" alt="" width="100%" />
+<img src="man/figures/README-unnamed-chunk-13-1.png" alt="" width="100%" />
 
 ``` r
 qqplot(runif(length(pLRT)), pLRT, xlab = "Uniform quantile", ylab = "LRT p-value", col = "blue")
 abline(0, 1, col = "gray")
 ```
 
-<img src="man/figures/README-unnamed-chunk-12-2.png" alt="" width="100%" />
+<img src="man/figures/README-unnamed-chunk-13-2.png" alt="" width="100%" />
 
 ``` r
 sessionInfo()
